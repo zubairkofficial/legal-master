@@ -6,6 +6,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import userProfileRoutes from './routes/userProfileRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 const app = express();
 
   // Enable CORS for cross-origin requests
@@ -18,9 +19,10 @@ const v1Router = express.Router();
 v1Router.use('/auth', authRoutes); 
 v1Router.use('/questions', questionRoutes);
 v1Router.use('/categories', categoryRoutes);
-v1Router.use('/admin/users', userRoutes);
+v1Router.use('/users', userRoutes);
 v1Router.use('/profile', userProfileRoutes);
 v1Router.use('/chats', chatRoutes);
+v1Router.use('/settings', settingsRoutes);
 
 
 app.use('/api/v1', v1Router);

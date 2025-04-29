@@ -1,20 +1,22 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Settings, 
-  ChevronLeft, 
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Settings,
+  ChevronLeft,
   ChevronRight,
   BarChart3,
   Calendar,
   MessagesSquare,
   User,
-  Users2
+  Users2,
+  MessageSquareIcon
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
+import { ChatHistorySidebar } from "../user/ChatHistorySidebar";
 
 interface SidebarProps {
   variant?: "admin" | "user";
@@ -29,7 +31,8 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
     { href: "/admin/users", icon: Users, label: "Users" },
     { href: "/admin/categories", icon: FileText, label: "Categories" },
     { href: "/admin/questions", icon: BarChart3, label: "Questions" },
-    { href: "/admin/chats", icon: Settings, label: "Chats" },
+    { href: "/admin/chats", icon: MessageSquareIcon, label: "Chats" },
+    { href: "/admin/settings", icon: Settings, label: "Settings" },
   ];
 
   const userLinks = [
@@ -44,7 +47,7 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
   const links = variant === "admin" ? adminLinks : userLinks;
 
   return (
-    <aside 
+    <aside
       className={cn(
         "bg-background h-screen border-r border-border transition-all duration-300 flex flex-col",
         collapsed ? "w-[70px]" : "w-[240px]",
@@ -54,11 +57,12 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
       <div className="p-4 flex items-center justify-between border-b border-border">
         {!collapsed && (
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold">
-              {variant === "admin" ? "A" : "L"}
+            <div className={` ${variant === "admin" ? "w-8 h-8 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold" : ""}`}>
+              {variant === "admin" ? "A": ""}
             </div>
             <span className="text-lg font-semibold">
-              {variant === "admin" ? "Admin" : "LegalMaster"}
+              {variant === "admin" ? "Admin" : <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+              }
             </span>
           </Link>
         )}
@@ -68,9 +72,9 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
           </div>
         )}
         {!collapsed && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setCollapsed(true)}
             className="p-0 h-8 w-8"
           >
@@ -79,23 +83,27 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
         )}
       </div>
 
-      <div className="flex-1 py-4 overflow-y-auto">
-        <nav className="px-2 space-y-1">
-          {links.map((link) => (
-            <Link
-              key={link.href}
-              to={link.href}
-              className={cn(
-                "flex items-center px-3 py-2 text-sm rounded-md text-foreground hover:bg-muted transition",
-                collapsed ? "justify-center" : "space-x-3"
-              )}
-            >
-              <link.icon className="h-5 w-5" />
-              {!collapsed && <span>{link.label}</span>}
-            </Link>
-          ))}
-        </nav>
-      </div>
+      {variant === "user" ? (
+        <ChatHistorySidebar collapsed={collapsed} />
+      ) : (
+        <div className="flex-1 py-4 overflow-y-auto">
+          <nav className="px-2 space-y-1">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                to={link.href}
+                className={cn(
+                  "flex items-center px-3 py-2 text-sm rounded-md text-foreground hover:bg-muted transition",
+                  collapsed ? "justify-center" : "space-x-3"
+                )}
+              >
+                <link.icon className="h-5 w-5" />
+                {!collapsed && <span>{link.label}</span>}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      )}
 
       {collapsed && (
         <div className="border-t border-border p-3">

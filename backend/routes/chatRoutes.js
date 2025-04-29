@@ -14,6 +14,7 @@ router.post('/', ChatController.createChat);
 router.get('/', ChatController.getAllChats);
 router.get('/history', ChatController.getChatHistory);
 router.get('/:id', ChatController.getChatById);
+router.get('/:id/initial-message', ChatController.streamInitialMessage);
 router.put('/:id', ChatController.renameChat);
 router.delete('/:id', ChatController.deleteChat);
 

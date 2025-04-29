@@ -27,109 +27,99 @@ const LegalQuestionnaire = ({ onSubmit, onBack, isLoading = false }: LegalQuesti
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold">Legal Questionnaire</h1>
-        <p className="text-muted-foreground mt-2">
-          Please answer these questions to help us better understand your legal situation
+    <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className="mb-4 text-center">
+        <h1 className="text-2xl font-bold">Legal Questionnaire</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Help us understand your legal situation
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Question 1: Country */}
-        <div className="border border-border bg-card rounded-lg shadow-md p-6">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#BB8A28] text-white font-medium mb-4">
-            1
-          </span>
-          <h2 className="text-xl font-semibold mb-2">Which country do you live in?</h2>
-          <p className="text-muted-foreground mb-4">Please specify your country of residence.</p>
-          <input
-            type="text"
-            name="country"
-            className="w-full p-4 border border-input rounded-md bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none transition-all"
-            placeholder="Enter your country"
-            value={formData.country}
-            onChange={handleChange}
-            required
-          />
+      <form onSubmit={handleSubmit} className="border border-border bg-card rounded-lg shadow-md p-5">
+        <div className="space-y-4">
+          {/* Country */}
+          <div className="space-y-1">
+            <label htmlFor="country" className="block text-sm font-medium">Country</label>
+            <input
+              id="country"
+              type="text"
+              name="country"
+              className="w-full p-2 text-sm border border-input rounded-md bg-background focus:ring-1 focus:ring-[#BB8A28] focus:outline-none"
+              placeholder="Your country of residence"
+              value={formData.country}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          {/* State */}
+          <div className="space-y-1">
+            <label htmlFor="state" className="block text-sm font-medium">State/Province</label>
+            <input
+              id="state"
+              type="text"
+              name="state"
+              className="w-full p-2 text-sm border border-input rounded-md bg-background focus:ring-1 focus:ring-[#BB8A28] focus:outline-none"
+              placeholder="Your state or province"
+              value={formData.state}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
+          {/* Role */}
+          <div className="space-y-1">
+            <label htmlFor="role" className="block text-sm font-medium">Your Role</label>
+            <select
+              id="role"
+              name="role"
+              className="w-full p-2 text-sm border border-input rounded-md bg-background focus:ring-1 focus:ring-[#BB8A28] focus:outline-none"
+              value={formData.role}
+              onChange={handleChange}
+              required
+            >
+              <option value="plaintiff">Plaintiff</option>
+              <option value="defendant">Defendant</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1">
+            <label htmlFor="description" className="block text-sm font-medium">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              className="w-full p-2 text-sm border border-input rounded-md h-24 bg-background focus:ring-1 focus:ring-[#BB8A28] focus:outline-none"
+              placeholder="Describe what happened, who was involved, and when..."
+              value={formData.description}
+              onChange={handleChange}
+              required
+            />
+          </div>
         </div>
 
-        {/* Question 2: State */}
-        <div className="border border-border bg-card rounded-lg shadow-md p-6">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#BB8A28] text-white font-medium mb-4">
-            2
-          </span>
-          <h2 className="text-xl font-semibold mb-2">Which state do you live in?</h2>
-          <p className="text-muted-foreground mb-4">Please specify your state or province.</p>
-          <input
-            type="text"
-            name="state"
-            className="w-full p-4 border border-input rounded-md bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none transition-all"
-            placeholder="Enter your state"
-            value={formData.state}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        {/* Question 3: Role */}
-        <div className="border border-border bg-card rounded-lg shadow-md p-6">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#BB8A28] text-white font-medium mb-4">
-            3
-          </span>
-          <h2 className="text-xl font-semibold mb-2">Are you a plaintiff or defendant?</h2>
-          <p className="text-muted-foreground mb-4">Please specify your role in the legal matter.</p>
-          <select
-            name="role"
-            className="w-full p-4 border border-input rounded-md bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none transition-all"
-            value={formData.role}
-            onChange={handleChange}
-            required
-          >
-            <option value="plaintiff">Plaintiff</option>
-            <option value="defendant">Defendant</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        {/* Question 4: Description */}
-        <div className="border border-border bg-card rounded-lg shadow-md p-6">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#BB8A28] text-white font-medium mb-4">
-            4
-          </span>
-          <h2 className="text-xl font-semibold mb-2">Can you describe what happened?</h2>
-          <p className="text-muted-foreground mb-4">Please provide details about the incident, who was involved, and when it happened.</p>
-          <textarea
-            name="description"
-            className="w-full p-4 border border-input rounded-md h-32 bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none transition-all"
-            placeholder="Please describe in detail what happened, who did it, and when this happened..."
-            value={formData.description}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="flex justify-between pt-4">
+        <div className="flex justify-between mt-6">
           <Button
             type="button"
             onClick={onBack}
             variant="outline"
-            className="px-6"
+            size="sm"
           >
             Back
           </Button>
           <Button 
             type="submit" 
             disabled={isLoading}
-            className="px-6"
+            size="sm"
           >
             {isLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></span>
+              <span className="flex items-center gap-1">
+                <span className="animate-spin h-3 w-3 border-2 border-white rounded-full border-t-transparent"></span>
                 <span>Processing...</span>
               </span>
             ) : (
-              'Submit and Start Conversation'
+              'Submit'
             )}
           </Button>
         </div>

@@ -43,6 +43,16 @@ interface ChangePasswordRequest {
   newPassword: string;
 }
 
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+interface ResetPasswordRequest {
+  token: string;
+  email: string;
+  newPassword: string;
+}
+
 // Authentication Service
 const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -92,6 +102,14 @@ const authService = {
   
   changePassword: async (data: ChangePasswordRequest): Promise<void> => {
     await api.post("/auth/change-password", data);
+  },
+
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
+    await api.post("/auth/forgot-password", data);
+  },
+  
+  resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+    await api.post("/auth/reset-password", data);
   },
 };
 

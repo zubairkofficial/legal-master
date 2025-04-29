@@ -23,27 +23,27 @@ interface UpdateUserData {
 // User Service
 const userService = {
   getAllUsers: async (): Promise<ExtendedUser[]> => {
-    const response = await api.get("/admin/users");
+    const response = await api.get("/users");
     return response.data.users;
   },
 
   getUserById: async (id: string): Promise<ExtendedUser> => {
-    const response = await api.get(`/admin/users/${id}`);
+    const response = await api.get(`/users/${id}`);
     return response.data.user;
   },
 
   createUser: async (userData: CreateUserData): Promise<ExtendedUser> => {
-    const response = await api.post("/admin/users", userData);
+    const response = await api.post("/users", userData);
     return response.data.user;
   },
 
   updateUser: async (id: string, userData: UpdateUserData): Promise<ExtendedUser> => {
-    const response = await api.put(`/admin/users/${id}`, userData);
+    const response = await api.put(`/users/${id}`, userData);
     return response.data.user;
   },
 
   deleteUser: async (id: string): Promise<void> => {
-    await api.delete(`/admin/users/${id}`);
+    await api.delete(`/users/${id}`);
   },
 };
 

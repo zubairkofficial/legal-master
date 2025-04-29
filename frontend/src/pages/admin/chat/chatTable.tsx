@@ -6,6 +6,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import chatService, { Chat, ChatMessage } from "@/services/chat.service";
 import userService from "@/services/user.service";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import * as Dialog from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
 
 export function ChatTable() {
   const [users, setUsers] = useState<User[]>([]);
@@ -16,6 +18,9 @@ export function ChatTable() {
   const [error, setError] = useState<string | null>(null);
   const [expandedChat, setExpandedChat] = useState<string | null>(null);
   const [isChatDetailsOpen, setIsChatDetailsOpen] = useState(false);
+  const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedChatTitle, setSelectedChatTitle] = useState("");
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -53,19 +58,19 @@ export function ChatTable() {
 
   const handleViewChatHistory = async (user: User, chatId: string) => {
     try {
-      // If messages for this chat are already loaded, just toggle the expanded state
-      if (chatMessages[chatId]) {
-        setExpandedChat(expandedChat === chatId ? null : chatId);
-        return;
+      // If messages for this chat are not loaded yet, fetch them
+      if (!chatMessages[chatId]) {
+        const messages = await chatService.getChatMessages(chatId);
+        setChatMessages(prev => ({
+          ...prev,
+          [chatId]: messages
+        }));
       }
-
-      // Otherwise, fetch the messages
-      const messages = await chatService.getChatMessages(chatId);
-      setChatMessages(prev => ({
-        ...prev,
-        [chatId]: messages
-      }));
-      setExpandedChat(chatId);
+      
+      // Set selected chat and open the modal
+      setSelectedChatId(chatId);
+      setSelectedChatTitle(`Chat #${chatId} - ${user.name}`);
+      setIsMessagesModalOpen(true);
     } catch (err) {
       console.error(`Error fetching messages for chat ${chatId}:`, err);
     }
@@ -192,38 +197,9 @@ export function ChatTable() {
                                             size="sm" 
                                             onClick={() => handleViewChatHistory(user, chat.id)}
                                           >
-                                            {!chatMessages[chat.id] ? "Load Messages" : (expandedChat === chat.id ? "Hide Messages" : "Show Messages")}
+                                            Load Messages
                                           </Button>
                                         </div>
-                                        
-                                        {expandedChat === chat.id && chatMessages[chat.id] && (
-                                          <div className="border rounded-md p-4 space-y-3 max-h-96 overflow-y-auto">
-                                            {chatMessages[chat.id].length === 0 ? (
-                                              <div className="text-center py-2">No messages in this chat</div>
-                                            ) : (
-                                              chatMessages[chat.id].map((message, index) => (
-                                                <div 
-                                                  key={message.id || index} 
-                                                  className={`p-3 rounded-md ${
-                                                    message.sender === 'user' 
-                                                      ? 'bg-blue-50 ml-auto max-w-[75%]' 
-                                                      : 'bg-gray-50 mr-auto max-w-[75%]'
-                                                  }`}
-                                                >
-                                                  <div className="flex justify-between items-center mb-1">
-                                                    <span className="text-xs font-semibold">
-                                                      {message.sender === 'user' ? 'User' : 'System'}
-                                                    </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                      {formatDate(message.createdAt)}
-                                                    </span>
-                                                  </div>
-                                                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                                                </div>
-                                              ))
-                                            )}
-                                          </div>
-                                        )}
                                       </div>
                                     </AccordionContent>
                                   </AccordionItem>
@@ -241,6 +217,68 @@ export function ChatTable() {
           </table>
         </div>
       )}
+
+      {/* Chat Messages Modal */}
+      <Dialog.Root open={isMessagesModalOpen} onOpenChange={setIsMessagesModalOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+          <Dialog.Content className="fixed top-[50%] left-[50%] max-h-[85vh] w-[90vw] max-w-[800px] translate-x-[-50%] translate-y-[-50%] rounded-md bg-white p-6 shadow-lg z-50 flex flex-col">
+            <Dialog.Title className="text-xl font-semibold mb-4">
+              {selectedChatTitle}
+            </Dialog.Title>
+            
+            <div className="flex-1 overflow-y-auto mb-4 border rounded-md p-4 space-y-3 max-h-[60vh]">
+              {selectedChatId && chatMessages[selectedChatId] ? (
+                chatMessages[selectedChatId].length > 0 ? (
+                  chatMessages[selectedChatId].map((message, index) => (
+                    <div 
+                      key={message.id || index} 
+                      className={`p-3 rounded-md ${
+                        message.sender === 'user' 
+                          ? 'bg-blue-50 ml-auto max-w-[75%]' 
+                          : 'bg-gray-50 mr-auto max-w-[75%]'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-semibold">
+                          {message.sender === 'user' ? 'User' : 'System'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(message.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">No messages in this chat</div>
+                )
+              ) : (
+                <div className="text-center py-8">Loading messages...</div>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsMessagesModalOpen(false)}
+                className="flex items-center gap-2"
+              >
+                Close
+              </Button>
+            </div>
+            
+            <Dialog.Close asChild>
+              <button 
+                className="absolute top-4 right-4 inline-flex items-center justify-center rounded-full w-6 h-6 focus:outline-none"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </Dialog.Close>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

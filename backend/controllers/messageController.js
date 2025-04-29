@@ -1,4 +1,5 @@
-import { Chat, Message, User } from '../models/index.js';
+import { Chat, Message, User, Settings } from '../models/index.js';
+import { OpenAI } from 'openai';
 
 class MessageController {
     // Get all messages for a chat
@@ -6,11 +7,19 @@ class MessageController {
         try {
             const { chatId } = req.params;
             const userId = req.user.id;
+            let chat;
             
-            // Check if the chat exists and belongs to the user
-            const chat = await Chat.findOne({
-                where: { id: chatId, userId }
-            });
+            if (req.user.role === 'admin') {
+                // Check if the chat exists and belongs to the user
+                 chat = await Chat.findOne({
+                    where: { id: chatId }
+                });
+            } else {
+                // Check if the chat exists and belongs to the user
+                 chat = await Chat.findOne({
+                    where: { id: chatId, userId }
+                });
+            }
             
             if (!chat) {
                 return res.status(404).json({
@@ -59,12 +68,17 @@ class MessageController {
             const { message } = req.body;
             const userId = req.user.id;
             
+            // Set SSE headers immediately
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.flushHeaders();
+            
             // Validate request
             if (!message) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Message content is required'
-                });
+                res.write(`data: ${JSON.stringify({ error: 'Message content is required' })}\n\n`);
+                res.end();
+                return;
             }
             
             // Check if the chat exists and belongs to the user
@@ -73,10 +87,9 @@ class MessageController {
             });
             
             if (!chat) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Chat not found or you do not have permission to access it'
-                });
+                res.write(`data: ${JSON.stringify({ error: 'Chat not found or you do not have permission to access it' })}\n\n`);
+                res.end();
+                return;
             }
             
             // Create the user message
@@ -86,30 +99,75 @@ class MessageController {
                 senderId: userId,
                 isUserMessage: true
             });
-            
-            // Simple AI response - In a real app, this would call an AI service
+
+            // Get the chat history for context
+            const chatHistory = await Message.findAll({
+                where: { chatId },
+                order: [['createdAt', 'ASC']],
+                include: [
+                    {
+                        model: User,
+                        as: 'sender',
+                        attributes: ['id', 'name', 'email']
+                    }
+                ]
+            });
+
+            // Transform chat history to OpenAI message format
+            const messages = chatHistory.map(msg => ({
+                role: msg.isUserMessage ? 'user' : 'assistant',
+                content: msg.content
+            }));
+
+            // Add the new user message to the context if it wasn't included in chatHistory
+            const lastMessage = messages[messages.length - 1];
+            if (!lastMessage || lastMessage.content !== message) {
+                messages.push({ role: 'user', content: message });
+            }
+
+            // Get OpenAI settings
+            const settings = await Settings.findOne({
+                where: {
+                    service: 'openai'
+                }
+            });
+
+            const openai = new OpenAI({
+                apiKey: settings.apiKey,
+            });
+
+            // Call OpenAI API with streaming enabled
+            const response = await openai.chat.completions.create({
+                model: settings.model || "gpt-4",
+                messages: messages,
+                stream: true,
+            });
+
+            let finalMessage = "";
+
+            for await (const chunk of response) {
+                const content = chunk.choices[0]?.delta?.content || "";
+                finalMessage += content;
+                
+                // Only send non-empty content
+                if (content) {
+                    res.write(`data: ${JSON.stringify({ content, id: chatId })}\n\n`);
+                }
+            }
+
+            // Create the AI message in the database
             const aiMessage = await Message.create({
-                content: `You said: "${message}". This is an AI response.`,
+                content: finalMessage,
                 chatId,
-                senderId: userId, // Using the user ID as we don't have a separate AI user
+                senderId: userId,
                 isUserMessage: false
             });
-            
-            // Return the AI message in the expected format
-            return res.status(201).json({
-                id: aiMessage.id.toString(),
-                chatId: aiMessage.chatId.toString(),
-                message: aiMessage.content,
-                sender: 'system',
-                createdAt: aiMessage.createdAt
-            });
+
+            res.end();
         } catch (error) {
             console.error('Error sending message:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to send message',
-                error: error.message
-            });
+            res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+            res.end();
         }
     }
 }

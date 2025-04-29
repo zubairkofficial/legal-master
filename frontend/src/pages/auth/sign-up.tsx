@@ -75,8 +75,7 @@ export default function SignUp() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8 bg-background order-1 lg:order-0">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold text-xl">L</div>
-            <span className="text-2xl font-bold">LEGAL MASTER.AI</span>
+            <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
           </div>
           
           <div className="text-center mb-8">
@@ -216,8 +215,8 @@ export default function SignUp() {
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
         <div className="relative z-10 text-white max-w-md p-12">
           <div className="flex items-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-white rounded flex items-center justify-center text-[#BB8A28] font-bold text-xl">L</div>
-            <span className="text-2xl font-bold">LEGAL MASTER.AI</span>
+            <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+
           </div>
           <h2 className="text-3xl font-bold mb-6">Cutting-Edge Legal Solutions Powered by AI</h2>
           <p className="mb-6 text-white/80">

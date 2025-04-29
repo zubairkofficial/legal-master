@@ -174,7 +174,7 @@ const ProfileSettings = () => {
     <div className="max-w-3xl mx-auto space-y-8">
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h2 className="text-2xl font-semibold bg-primary-foreground text-primary">
             Profile Settings
           </h2>
           <p className="text-muted-foreground">
@@ -204,7 +204,7 @@ const ProfileSettings = () => {
               onClick={handleAvatarClick}
             >
               <AvatarImage src={avatarPreview || user?.profileImage || "/placeholder-avatar.jpg"} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white text-xl">
+              <AvatarFallback className="bg-primary-foreground text-primary text-xl">
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>

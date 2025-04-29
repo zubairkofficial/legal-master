@@ -58,8 +58,41 @@ const questionService = {
   },
 
   getQuestionsByCategory: async (categoryId: string): Promise<QuestionResponse> => {
-    const response = await api.get(`/categories/${categoryId}/questions`);
-    return response.data;
+    try {
+      console.log(`Fetching questions for category ${categoryId} from API`);
+      const response = await api.get(`/categories/${categoryId}/questions`);
+      console.log('Questions API response:', response);
+
+      // Make sure we're returning the expected structure
+      if (response.data && response.data.data) {
+        return response.data;
+      } else if (Array.isArray(response.data)) {
+        // If the API returns an array directly, reformat it
+        return {
+          data: response.data,
+          pagination: {
+            page: 1,
+            limit: response.data.length,
+            pages: 1,
+            total: response.data.length
+          }
+        };
+      } else {
+        console.error('Unexpected questions API response format:', response.data);
+        return {
+          data: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            pages: 0,
+            total: 0
+          }
+        };
+      }
+    } catch (error) {
+      console.error(`Error fetching questions for category ${categoryId}:`, error);
+      throw error;
+    }
   },
 };
 

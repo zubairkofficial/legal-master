@@ -1,10 +1,11 @@
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
-import initUserModel from './User.js';
+import initUserModel from './user.js';
 import initCategoryModel from './category.js';
 import initQuestionModel from './question.js';
 import initChatModel from './chat.js';
 import initMessageModel from './message.js';
+import initSettingsModel from './settings.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ const Category = initCategoryModel(sequelize);
 const Question = initQuestionModel(sequelize);
 const Chat = initChatModel(sequelize);
 const Message = initMessageModel(sequelize);
+const Settings = initSettingsModel(sequelize);
 
 // Define associations
 
@@ -73,5 +75,5 @@ Message.belongsTo(User, {
 });
 
 // Export models and sequelize instance
-export { sequelize, User, Category, Question, Chat, Message };
+export { sequelize, User, Category, Question, Chat, Message, Settings };
 export default sequelize;

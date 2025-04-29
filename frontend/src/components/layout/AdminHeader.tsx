@@ -1,6 +1,5 @@
-import  { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Search, Menu, LogOut, Settings } from "lucide-react";
+import { Bell, Menu, LogOut, Settings } from "lucide-react";
 import { useTheme } from "../theme/theme-provider";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
@@ -64,12 +63,7 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
 
         {/* Search */}
         <div className="hidden md:flex items-center relative max-w-md w-full">
-          <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-9 pr-4 py-2 h-9 bg-muted text-sm rounded-md border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+        
         </div>
 
         {/* Right side icons and profile */}

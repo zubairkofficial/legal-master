@@ -2,7 +2,7 @@ import { useTheme } from "../../../components/theme/theme-provider";
 import { cn } from "../../../lib/utils";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
-
+import { useNavigate } from "react-router-dom";
 const testimonials = [
   {
     id: 1,
@@ -43,6 +43,7 @@ const testimonials = [
 
 export default function Testimonials() {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
   
   return (
@@ -117,7 +118,7 @@ export default function Testimonials() {
             <Button>
               Try AI Consultation
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => navigate("/sign-up")}>
               Create Free Account
             </Button>
           </div>

@@ -29,6 +29,11 @@ export default function initQuestionModel(sequelize) {
                     key: 'id',
                 },
             },
+            status: {
+                type: DataTypes.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
         },
         {
             sequelize,

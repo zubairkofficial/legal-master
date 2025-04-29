@@ -1,6 +1,8 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import SignIn from "./pages/auth/sign-in";
 import SignUp from "./pages/auth/sign-up";
+import ForgotPassword from "./pages/auth/forgot-password";
+import ResetPassword from "./pages/auth/reset-password";
 import Test from "./pages/test";
 import LandingPage from "./pages/landing";
 import AdminDashboard from "./pages/admin";
@@ -13,6 +15,7 @@ import CategoryTable from "./pages/admin/category/categorytable";
 import Chat from "./pages/user/chat/chat";
 import Auth from "./components/auth";
 import ProfileSettings from "./pages/profile/ProfileSettings";
+import AdminSettings from "./pages/admin/settings";
 
 const router = createBrowserRouter([
     {
@@ -34,6 +37,14 @@ const router = createBrowserRouter([
     {
         path: "/sign-up",
         element: <SignUp />
+    },
+    {
+        path: "/forgot-password",
+        element: <ForgotPassword />
+    },
+    {
+        path: "/reset-password",
+        element: <ResetPassword />
     },
     // Admin routes
     {
@@ -63,6 +74,10 @@ const router = createBrowserRouter([
             {
                 path: "categories",
                 element: <CategoryTable />
+            },
+            {
+                path: "settings",
+                element: <AdminSettings />
             }
         ]
     },

@@ -2,6 +2,10 @@ import Helpers from "@/config/helpers";
 import axios from "axios";
 // Define Base API URL
 const BASE_URL = Helpers.apiUrl || "https://api.example.com";
+
+// Log the actual API URL for debugging
+console.log('API is configured with BASE_URL:', BASE_URL);
+
 // Create an Axios instance
 const api = axios.create({
   baseURL: BASE_URL,
@@ -18,6 +22,7 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log(`Making API request to: ${config.baseURL}${config.url}`);
     return config;
   },
   (error) => {

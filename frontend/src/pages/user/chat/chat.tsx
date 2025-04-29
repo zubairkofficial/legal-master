@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import categoryService, { Category } from '@/services/category.service';
 import questionService, { Question } from '@/services/question.service';
-import chatService, { QuestionResponse as ChatQuestionResponse, LegalQuestionnaireData } from '@/services/chat.service';
+import chatService, { QuestionResponse as ChatQuestionResponse, LegalQuestionnaireData, ChatMessage } from '@/services/chat.service';
 import useUserStore from '@/store/useUserStore';
 import { useTheme } from '@/components/theme/theme-provider';
 import LegalQuestionnaire from '@/components/forms/LegalQuestionnaire';
+import { eventEmitter } from '@/lib/eventEmitter';
+import ChatGPTFormatter from '@/components/chatgptformatter';
 
 enum ChatStage {
   CATEGORY_SELECTION = 'category_selection',
@@ -51,19 +53,21 @@ const Chat = () => {
   const { theme } = useTheme();
   const messageEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-
+  const location = useLocation();
+ 
   // State for the chat flow
   const [stage, setStage] = useState<ChatStage>(ChatStage.CATEGORY_SELECTION);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  // Changed from array to single string to enforce single selection
+  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [questionResponses, setQuestionResponses] = useState<ChatQuestionResponse[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  
+
   // Legal questionnaire data
   const [legalQuestionnaireData, setLegalQuestionnaireData] = useState<LegalQuestionnaireData>({
     country: '',
@@ -75,30 +79,33 @@ const Chat = () => {
   // Debug state
   const [apiError, setApiError] = useState<string | null>(null);
 
-  // Load categories on component mount
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setIsLoading(true);
-        const response = await categoryService.getAllCategories();
-        setCategories(response.data);
-      } catch (error) {
-        console.error('Failed to load categories:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    // If chatId is provided, load existing chat
-    if (chatId) {
-      loadExistingChat(chatId);
-    } else {
+    // If we're in /chat/new, load the category selection screen
+    if (location.pathname.includes('new')) {
+      setStage(ChatStage.CATEGORY_SELECTION);
       loadCategories();
+      setSelectedCategory(null);
+    } 
+    // If we have a specific chatId, load that chat
+    else if (chatId) {
+      loadExistingChat(chatId);
     }
-  }, [chatId]);
+    else if(location.state?.stage){
+      setStage(location.state.stage as ChatStage);
+      setSelectedCategory(null);
+    }
+    // If no chatId is provided, redirect to /chat/new
+    else {
+      navigate('/chat/new', { state: { stage: 'category_selection' } });
+    }
+  }, [chatId, location]);
 
-  // Scroll to bottom whenever messages update
+
+
+  // Scroll to bottom whenever messages update()
   useEffect(() => {
+    console.log("Messages updated, scrolling to bottom:", messages.length);
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
@@ -113,27 +120,99 @@ const Chat = () => {
     }
   }, [stage, questions.length]);
 
+  const loadCategories = async () => {
+    try {
+      setIsLoading(true);
+      setApiError(null);
+      console.log('Starting to load categories');
+      const response = await categoryService.getAllCategories();
+      
+      if (response && response.data && Array.isArray(response.data)) {
+        console.log('Categories loaded successfully:', response.data);
+        setCategories(response.data);
+      } else {
+        console.error('Unexpected categories response format:', response);
+        setApiError('Failed to load categories properly. Please try refreshing the page.');
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      setApiError('Error loading categories. Please try refreshing the page or contact support.');
+      setCategories([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loadExistingChat = async (id: string) => {
     try {
       setIsLoading(true);
+      console.log('Loading existing chat:', id);
       const chatData = await chatService.getChatById(id);
+      console.log('Chat data loaded:', chatData);
       setCurrentChatId(id);
       setStage(ChatStage.CHAT_INTERACTION);
 
       // Load messages for the chat
+      console.log('Loading messages for chat:', id);
       const messagesData = await chatService.getChatMessages(id);
-      setMessages(
-        messagesData.map((msg) => ({
-          id: msg.id,
-          message: msg.message,
-          sender: msg.sender,
-          timestamp: new Date(msg.createdAt),
-        }))
-      );
+      console.log('Messages loaded:', messagesData);
+      
+      if (Array.isArray(messagesData) && messagesData.length > 0) {
+        setMessages(
+          messagesData.map((msg: ChatMessage) => ({
+            id: msg.id,
+            message: msg.message,
+            sender: msg.sender,
+            timestamp: new Date(msg.createdAt),
+          }))
+        );
+      } else {
+        // If no messages found, this might be a newly created chat
+        // Start streaming the initial message
+        console.log('No messages found, starting initial message stream');
+        
+        // Create a placeholder for the incoming message
+        const initialMessageId = Date.now().toString();
+        setMessages([{
+          id: initialMessageId,
+          message: '',
+          sender: 'system',
+          timestamp: new Date(),
+        }]);
+        
+        // Stream the initial message
+        try {
+          await chatService.streamInitialMessage(id, (chunk) => {
+            setMessages((prev) => {
+              // Find the initial message
+              const initialMessage = prev.find(m => m.id === initialMessageId);
+              if (initialMessage) {
+                // Update the existing message
+                return prev.map(m => 
+                  m.id === initialMessageId 
+                    ? { ...m, message: m.message + chunk } 
+                    : m
+                );
+              } else {
+                // If somehow message was removed, create a new one
+                return [...prev, {
+                  id: initialMessageId,
+                  message: chunk,
+                  sender: 'system',
+                  timestamp: new Date()
+                }];
+              }
+            });
+          });
+        } catch (error) {
+          console.error('Error streaming initial message:', error);
+          setApiError('Failed to load initial message. Please refresh the page.');
+        }
+      }
     } catch (error) {
       console.error('Failed to load chat:', error);
-      // Redirect to new chat if chat loading fails
-      navigate('/chat/new');
+      setApiError('Failed to load chat. Please try again or go back to the chat list.');
     } finally {
       setIsLoading(false);
     }
@@ -144,64 +223,61 @@ const Chat = () => {
       setIsLoading(true);
       setSelectedCategory(categoryId);
       setApiError(null);
+      // Clear previously selected question when changing category
+      setSelectedQuestion(null);
       
       console.log('Fetching questions for category:', categoryId);
       
       // Load questions for the selected category
       const response = await questionService.getQuestionsByCategory(categoryId);
+      console.log('Full response from getQuestionsByCategory:', response);
+      
       const questionsData = response.data;
       console.log('Received questions:', questionsData);
       
       if (Array.isArray(questionsData) && questionsData.length > 0) {
+        console.log('Setting questions with valid data:', questionsData);
         setQuestions(questionsData);
-        setSelectedQuestions([]);
+        
+        // Immediately change the stage
+        setStage(ChatStage.QUESTION_SELECTION);
       } else {
         console.warn('No questions returned or invalid format, using mock data');
         setQuestions(MOCK_QUESTIONS);
-        setSelectedQuestions([]);
         setApiError('Could not load questions from server. Using sample questions instead.');
-      }
-      
-      // Force stage change
-      setTimeout(() => {
+        
+        // Still proceed to question selection
         setStage(ChatStage.QUESTION_SELECTION);
-        console.log('Changed stage to:', ChatStage.QUESTION_SELECTION);
-      }, 0);
+      }
     } catch (error) {
       console.error('Failed to load questions:', error);
       setApiError('Error loading questions. Using sample questions instead.');
       
       // Use mock data on error
       setQuestions(MOCK_QUESTIONS);
-      setSelectedQuestions([]);
       
       // Still proceed to question selection
-      setTimeout(() => {
-        setStage(ChatStage.QUESTION_SELECTION);
-      }, 0);
+      setStage(ChatStage.QUESTION_SELECTION);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleQuestionSelection = (questionId: string) => {
-    setSelectedQuestions(prev => {
-      if (prev.includes(questionId)) {
-        return prev.filter(id => id !== questionId);
-      } else {
-        return [...prev, questionId];
-      }
-    });
+  // Modified to set a single question instead of toggling in an array
+  const handleQuestionSelect = (questionId: string) => {
+    setSelectedQuestion(questionId);
   };
 
   const handleQuestionSubmit = () => {
-    // Create empty responses for selected questions
-    const responses = selectedQuestions.map(qId => ({
-      questionId: qId,
-      answer: '',
-    }));
+    if (!selectedQuestion) return;
     
-    setQuestionResponses(responses);
+    // Create response for the selected question
+    const response = {
+      questionId: selectedQuestion,
+      answer: '',
+    };
+    
+    setQuestionResponses([response]);
     
     // Move to legal questionnaire
     setStage(ChatStage.LEGAL_QUESTIONNAIRE);
@@ -214,46 +290,38 @@ const Chat = () => {
       setIsLoading(true);
       setLegalQuestionnaireData(formData);
       
-      // Start a new chat with the question responses and legal questionnaire data
-      const chatData = await chatService.startChat({
+      // Step 1: Create the chat in the database first
+      console.log('Creating new chat with data:', {
         categoryId: selectedCategory,
         questionResponses,
-        legalQuestionnaire: formData, // You'll need to update your API to accept this
+        legalQuestionnaire: formData
       });
+
+      const chatResponse = await chatService.createChat({
+        categoryId: selectedCategory,
+        questionResponses,
+        legalQuestionnaire: formData
+      });
+
+      console.log('Chat created successfully:', chatResponse);
+      const newChatId = chatResponse.id;
       
-      // Extract chat ID from response - backend returns {success, data, message}
-      const newChatId = chatData.data.id;
+      // Set current chat ID and change stage to chat interaction
       setCurrentChatId(newChatId);
-      
-      // Set stage to chat interaction
       setStage(ChatStage.CHAT_INTERACTION);
       
-      // Update URL to include the chat ID and navigate to it
-      navigate(`/chat/${newChatId}`);
+      // Initialize with empty messages array
+      setMessages([]);
       
-      // Fetch messages for the newly created chat
-      try {
-        const messagesData = await chatService.getChatMessages(newChatId);
-        if (Array.isArray(messagesData)) {
-          setMessages(
-            messagesData.map((msg) => ({
-              id: msg.id,
-              message: msg.message,
-              sender: msg.sender,
-              timestamp: new Date(msg.createdAt),
-            }))
-          );
-        } else {
-          console.error('Unexpected message data format:', messagesData);
-          setMessages([]);
-        }
-      } catch (error) {
-        console.error('Failed to load initial messages:', error);
-        // Fallback to an empty messages list
-        setMessages([]);
-      }
+      // Navigate to the chat detail page
+      navigate(`/chat/${newChatId}`, { replace: true });
+      
+      // Emit event to notify other components that a new chat was created
+      eventEmitter.emit('chatCreated', newChatId);
+      
     } catch (error) {
       console.error('Failed to start chat:', error);
+      setApiError('Failed to create chat. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -261,55 +329,68 @@ const Chat = () => {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newMessage.trim() || !currentChatId) return;
-    
-    // Add user message to chat
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      message: newMessage,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-    
-    setMessages((prev) => [...prev, userMessage]);
+
+    setIsLoading(true);
     setNewMessage('');
-    
+
     try {
-      // Send message to API
-      const response = await chatService.sendMessage({
-        chatId: currentChatId,
+      // Add user message to the chat
+      const userMessage: Message = {
+        id: Date.now().toString(),
         message: newMessage,
-      });
-      
-      // Add system response
-      const systemMessage: Message = {
-        id: response.id,
-        message: response.message,
-        sender: 'system',
-        timestamp: new Date(response.createdAt),
-      };
-      
-      setMessages((prev) => [...prev, systemMessage]);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      
-      // Add error message
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        message: 'Sorry, there was an error sending your message. Please try again.',
-        sender: 'system',
+        sender: 'user',
         timestamp: new Date(),
       };
       
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages(prev => [...prev, userMessage]);
+      console.log('Added user message:', userMessage);
+
+      // Send message to the backend and handle streaming response
+      console.log('Sending message to backend:', { chatId: currentChatId, message: newMessage });
+      await chatService.sendStreamMessage(
+        { chatId: currentChatId, message: newMessage },
+        (chunk) => {
+          console.log('Received chunk:', chunk);
+          setMessages(prev => {
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage && lastMessage.sender === 'system') {
+              // Update the last system message
+              console.log('Updating existing system message');
+              return [
+                ...prev.slice(0, -1),
+                { ...lastMessage, message: lastMessage.message + chunk }
+              ];
+            } else {
+              // Create a new system message
+              console.log('Creating new system message with chunk');
+              const systemMessage: Message = {
+                id: Date.now().toString(),
+                message: chunk,
+                sender: 'system',
+                timestamp: new Date(),
+              };
+              return [...prev, systemMessage];
+            }
+          });
+        }
+      );
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setApiError(`Error sending message: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Helper to format category cards
+  // Helper to format category cards with improved visual feedback
   const CategoryCard = ({ category }: { category: Category }) => (
     <div
-      className="border border-border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden"
+      className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
+        selectedCategory === category.id 
+          ? 'border-[#BB8A28] bg-[#BB8A28] bg-opacity-10' 
+          : 'border-border bg-card'
+      }`}
       onClick={() => {
         console.log('Category clicked:', category.id);
         handleCategorySelect(category.id);
@@ -325,8 +406,86 @@ const Chat = () => {
 
   // Render different UI based on the current stage
   const renderContent = () => {
-    console.log('Current stage:', stage);
+    if (chatId && chatId !== 'new') {
+      // Always render the chat interaction UI for a specific chat ID
+      return (
+        <div key="chat-interaction" className="flex flex-col h-full bg-background rounded-lg  overflow-hidden" ref={chatContainerRef}>
+          {/* Chat header */}
+        
+          
+          {/* Messages area */}
+          <div className="flex-1 overflow-auto p-6 space-y-6" style={{ scrollbarWidth: 'thin' }}>
+            {messages.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                <p>No messages yet. Start a conversation!</p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${
+                    message.sender === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  <div
+                    className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                      message.sender === 'user'
+                        ? 'bg-[#BB8A28] text-white'
+                        : theme === 'dark' 
+                          ? 'bg-secondary text-secondary-foreground' 
+                          : 'bg-muted text-foreground'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{message.sender === 'user' ? message.message: <ChatGPTFormatter response = {message.message}/>}</p>
+                    <p className="text-xs mt-1 opacity-70 text-right">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%] px-4 py-3 rounded-2xl bg-muted">
+                  <div className="flex gap-2">
+                    <div className="animate-bounce h-2 w-2 bg-muted-foreground rounded-full delay-75"></div>
+                    <div className="animate-bounce h-2 w-2 bg-muted-foreground rounded-full delay-100"></div>
+                    <div className="animate-bounce h-2 w-2 bg-muted-foreground rounded-full delay-150"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messageEndRef} />
+          </div>
+          
+          {/* Message input */}
+          <div className="border-t border-border p-4 bg-card">
+            <form onSubmit={sendMessage} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1 p-3 rounded-full border border-input bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none"
+                placeholder="Type your message..."
+                disabled={isLoading}
+              />
+              <Button 
+                type="submit" 
+                disabled={!newMessage.trim() || isLoading} 
+                className="rounded-full h-12 w-12 p-0 flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m3 3 3 9-3 9 19-9Z"></path>
+                  <path d="M6 12h16"></path>
+                </svg>
+              </Button>
+            </form>
+          </div>
+        </div>
+      );
+    }
     
+    // For /chat/new, render the appropriate stage content
     switch (stage) {
       case ChatStage.CATEGORY_SELECTION:
         return (
@@ -336,28 +495,49 @@ const Chat = () => {
               <p className="text-muted-foreground mt-2">Choose a topic to start your conversation</p>
             </div>
             
+            {apiError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <p>{apiError}</p>
+                <Button 
+                  onClick={loadCategories} 
+                  variant="outline" 
+                  className="mt-2">
+                  Retry
+                </Button>
+              </div>
+            )}
+            
             {isLoading ? (
               <div className="flex justify-center py-20">
                 <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
               </div>
-            ) : (
+            ) : categories.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 {categories.map((category) => (
                   <CategoryCard key={category.id} category={category} />
                 ))}
+              </div>
+            ) : !apiError && (
+              <div className="text-center py-10">
+                <p className="text-lg text-muted-foreground">No categories found.</p>
+                <Button
+                  onClick={loadCategories}
+                  className="mt-4"
+                >
+                  Refresh Categories
+                </Button>
               </div>
             )}
           </div>
         );
         
       case ChatStage.QUESTION_SELECTION:
-        console.log('Rendering questions for selection:', questions);
         return (
           <div key="question-selection" className="container mx-auto px-4 py-8 max-w-5xl">
             <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold">Select Questions</h1>
+              <h1 className="text-3xl font-bold">Select a Question</h1>
               <p className="text-muted-foreground mt-2">
-                Choose the questions relevant to your case
+                Choose one question relevant to your case
               </p>
               
               {apiError && (
@@ -372,26 +552,26 @@ const Chat = () => {
                 <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
               </div>
             ) : questions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="space-y-4 mt-6">
                 {questions.map((question) => (
                   <div 
                     key={question.id} 
-                    className={`border border-border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
-                      selectedQuestions.includes(question.id) 
+                    className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
+                      selectedQuestion === question.id 
                         ? 'bg-[#BB8A28] bg-opacity-10 border-[#BB8A28]' 
-                        : 'bg-card'
+                        : 'bg-card border-border'
                     }`}
-                    onClick={() => toggleQuestionSelection(question.id)}
+                    onClick={() => handleQuestionSelect(question.id)}
                   >
                     <div className="h-2 bg-[#BB8A28]" />
                     <div className="p-6">
                       <div className="flex items-start">
                         <div className={`w-6 h-6 rounded-full border mr-4 flex-shrink-0 flex items-center justify-center ${
-                          selectedQuestions.includes(question.id)
+                          selectedQuestion === question.id
                             ? 'bg-[#BB8A28] border-[#BB8A28]'
                             : 'border-input'
                         }`}>
-                          {selectedQuestions.includes(question.id) && (
+                          {selectedQuestion === question.id && (
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
@@ -406,7 +586,7 @@ const Chat = () => {
                   </div>
                 ))}
                 
-                <div className="col-span-1 md:col-span-2 flex justify-between pt-4">
+                <div className="flex justify-between pt-4">
                   <Button
                     type="button"
                     onClick={() => setStage(ChatStage.CATEGORY_SELECTION)}
@@ -417,7 +597,7 @@ const Chat = () => {
                   </Button>
                   <Button 
                     onClick={handleQuestionSubmit}
-                    disabled={isLoading || selectedQuestions.length === 0}
+                    disabled={isLoading || !selectedQuestion}
                     className="px-6"
                   >
                     Next: Legal Questionnaire
@@ -447,87 +627,27 @@ const Chat = () => {
           />
         );
         
-      case ChatStage.CHAT_INTERACTION:
-        return (
-          <div key="chat-interaction" className="flex flex-col h-full bg-background rounded-lg shadow-lg overflow-hidden" ref={chatContainerRef}>
-            {/* Chat header */}
-            <div className="px-6 py-4 border-b border-border bg-card">
-              <h2 className="text-xl font-semibold text-foreground">Live Assistance</h2>
-            </div>
-            
-            {/* Messages area */}
-            <div className="flex-1 overflow-auto p-6 space-y-6" style={{ scrollbarWidth: 'thin' }}>
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl ${
-                      message.sender === 'user'
-                        ? 'bg-[#BB8A28] text-white'
-                        : theme === 'dark' 
-                          ? 'bg-secondary text-secondary-foreground' 
-                          : 'bg-muted text-foreground'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.message}</p>
-                    <p className="text-xs mt-1 opacity-70 text-right">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              <div ref={messageEndRef} />
-            </div>
-            
-            {/* Message input */}
-            <div className="border-t border-border p-4 bg-card">
-              <form onSubmit={sendMessage} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  className="flex-1 p-3 rounded-full border border-input bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none"
-                  placeholder="Type your message..."
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!newMessage.trim()} 
-                  className="rounded-full h-12 w-12 p-0 flex items-center justify-center"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m3 3 3 9-3 9 19-9Z"></path>
-                    <path d="M6 12h16"></path>
-                  </svg>
-                </Button>
-              </form>
-            </div>
-          </div>
-        );
+      default:
+        return null;
     }
-  };
-
-  // Debugging helper component
-  const DebugInfo = () => {
-    if (process.env.NODE_ENV !== 'development') return null;
-    
-    return (
-      <div className="fixed bottom-0 left-0 bg-black bg-opacity-70 text-white p-2 text-xs z-50 max-w-xs overflow-auto">
-        <div>Stage: {stage}</div>
-        <div>Questions: {questions.length}</div>
-        <div>Selected Questions: {selectedQuestions.length}</div>
-        <div>Selected Category: {selectedCategory}</div>
-      </div>
-    );
   };
 
   return (
     <div className="h-full">
       {renderContent()}
-      <DebugInfo />
+      
+      {/* Error notification */}
+      {apiError && stage === ChatStage.CHAT_INTERACTION && (
+        <div className="fixed bottom-4 right-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md shadow-lg">
+          {apiError}
+          <button 
+            onClick={() => setApiError(null)}
+            className="ml-2 text-red-700 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 };

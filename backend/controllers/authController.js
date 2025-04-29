@@ -11,6 +11,165 @@ import fs from 'fs';
 
 dotenv.config();
 
+// Centralized Email Configuration
+// Centralized Email Configuration
+const emailConfig = {
+    host: process.env.MAIL_HOST,
+    port: process.env.MAIL_PORT,
+    secure: false,
+    auth: {
+        user: process.env.MAIL_USERNAME,
+        pass: process.env.MAIL_PASSWORD,
+    },
+};
+
+// Create reusable transporter
+
+// Create reusable transporter
+const transporter = nodemailer.createTransport(emailConfig);
+
+// Base email template for consistent branding
+const getEmailTemplate = (content, buttonText, buttonUrl) => {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGAL MASTER AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #000000;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 30px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .email-header {
+            background-color: #BB8A28;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+            margin: -30px -30px 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #BB8A28;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #9E7320;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #555555;
+        }
+        a {
+            color: #BB8A28;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #9E7320;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h1>LEGAL MASTER AI</h1>
+        </div>
+        
+        ${content}
+        
+        ${buttonText && buttonUrl ? `<a href="${buttonUrl}" class="button">${buttonText}</a>` : ''}
+        
+        <div class="footer">
+            <p>© ${new Date().getFullYear()} LEGAL MASTER AI. All rights reserved.</p>
+            ${buttonUrl ? `<p>If you're having trouble, copy and paste this link into your browser: <br>${buttonUrl}</p>` : ''}
+        </div>
+    </div>
+</body>
+</html>`;
+};
+
+// HTML page template for responses
+const getHtmlPageTemplate = (content, isSuccess = true) => {
+    const iconType = isSuccess ? '✅' : '❌';
+    const iconColor = isSuccess ? '#4caf50' : '#d32f2f';
+    const titleColor = isSuccess ? '#4caf50' : '#d32f2f';
+    
+    return `<!DOCTYPE html>
+<html>
+<head>
+    <title>${isSuccess ? 'Success' : 'Error'} - LEGAL MASTER AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            border: 1px solid #e0e0e0;
+        }
+        .icon {
+            color: ${iconColor};
+            font-size: 48px;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            color: ${titleColor};
+            margin-bottom: 1rem;
+        }
+        p {
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .link {
+            color: #BB8A28;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .link:hover {
+            color: #9E7320;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">${iconType}</div>
+        ${content}
+    </div>
+</body>
+</html>`;
+};
+
 class AuthController {
 
     static async sendConfirmationEmail(user) {
@@ -20,102 +179,19 @@ class AuthController {
         user.verificationToken = token; // Make sure to update your User model to store this token
         await user.save();
 
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.titan.email',
-            port: 587,
-            secure: false,
-            auth: {
-                user: process.env.MAIL_USERNAME,
-                pass: process.env.MAIL_PASSWORD,
-            },
-        });
-
-        const emailTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            color: #e0e0e0;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #121212;
-        }
-        .email-container {
-            background-color: #1e1e1e;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            padding: 30px;
-            text-align: center;
-        }
-        .email-header {
-            background-color: #b71c1c;
-            color: #ffffff;
-            padding: 15px;
-            border-radius: 8px 8px 0 0;
-            margin: -30px -30px 20px;
-        }
-        .verify-button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #d32f2f;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-top: 20px;
-            transition: background-color 0.3s ease;
-        }
-        .verify-button:hover {
-            background-color: #c62828;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #888;
-        }
-        a {
-            color: #d32f2f;
-            text-decoration: none;
-        }
-        a:hover {
-            color: #b71c1c;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="email-header">
-            <h1>Clutch AI</h1>
-        </div>
+        const emailContent = `
+        <h2>Welcome to LEGAL MASTER AI!</h2>
         
-        <h2>Welcome Aboard!</h2>
-        
-        <p>Thank you for signing up for Clutch AI. To get started and secure your account, please verify your email address by clicking the button below.</p>
-        
-        <a href="${verificationUrl}" class="verify-button">Verify Email Address</a>
+        <p>Thank you for signing up. To get started and secure your account, please verify your email address by clicking the button below.</p>
         
         <p>If you didn't create an account, you can safely ignore this email.</p>
-        
-        <div class="footer">
-            <p>© ${new Date().getFullYear()} Clutch AI. All rights reserved.</p>
-            <p>If you're having trouble, copy and paste this link into your browser: <br>${verificationUrl}</p>
-        </div>
-    </div>
-</body>
-</html>
-    `;
+        `;
 
         const mailOptions = {
             from: process.env.MAIL_FROM_ADDRESS,
             to: user.email,
-            subject: 'Verify Your Email - Clutch-AI',
-            html: emailTemplate // Assuming you'll define the template as shown above
+            subject: 'Verify Your Email - LEGAL MASTER AI',
+            html: getEmailTemplate(emailContent, 'Verify Email Address', verificationUrl)
         };
 
         try {
@@ -182,55 +258,12 @@ class AuthController {
             const user = await User.findOne({ where: { email, verificationToken: token } });
 
             if (!user) {
-                return res.status(400).send(`
-                    <html>
-                    <head>
-                        <title>Email Verification Failed</title>
-                        <style>
-                            body {
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                                background-color: #121212;
-                                color: #e0e0e0;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                height: 100vh;
-                                margin: 0;
-                            }
-                            .container {
-                                background-color: #1e1e1e;
-                                padding: 2rem;
-                                border-radius: 8px;
-                                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                                text-align: center;
-                                max-width: 400px;
-                            }
-                            .error-icon {
-                                color: #d32f2f;
-                                font-size: 48px;
-                                margin-bottom: 1rem;
-                            }
-                            h1 {
-                                color: #d32f2f;
-                                margin-bottom: 1rem;
-                            }
-                            p {
-                                margin-bottom: 1.5rem;
-                                line-height: 1.5;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="error-icon">❌</div>
-                            <h1>Verification Failed</h1>
-                            <p>Invalid or expired verification link. Please request a new verification email.</p>
-                        </div>
-                    </body>
-                    </html>
-                `);
+                const errorContent = `
+                    <h1>Verification Failed</h1>
+                    <p>Invalid or expired verification link. Please request a new verification email.</p>
+                `;
+                return res.status(400).send(getHtmlPageTemplate(errorContent, false));
             }
-
 
             await user.update(
                 {
@@ -239,112 +272,20 @@ class AuthController {
                 }
             )
 
-            // Return success HTML page
-            res.send(`
-                <html>
-                <head>
-                    <title>Email Verified Successfully</title>
-                    <style>
-                        body {
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                            background-color: #121212;
-                            color: #e0e0e0;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            height: 100vh;
-                            margin: 0;
-                        }
-                        .container {
-                            background-color: #1e1e1e;
-                            padding: 2rem;
-                            border-radius: 8px;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                            text-align: center;
-                            max-width: 400px;
-                        }
-                        .success-icon {
-                            color: #4caf50;
-                            font-size: 48px;
-                            margin-bottom: 1rem;
-                        }
-                        h1 {
-                            color: #4caf50;
-                            margin-bottom: 1rem;
-                        }
-                        p {
-                            margin-bottom: 1.5rem;
-                            line-height: 1.5;
-                        }
-                        .login-link {
-                            color: #d32f2f;
-                            text-decoration: none;
-                            font-weight: bold;
-                        }
-                        .login-link:hover {
-                            color: #b71c1c;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="success-icon">✅</div>
-                        <h1>Email Verified Successfully!</h1>
-                        <p>Your account has been successfully verified. You can now log in to your account.</p>
-                        <p class="login-link">You can now login to your account </p>
-                    </div>
-                </body>
-                </html>
-            `);
+            const successContent = `
+                <h1>Email Verified Successfully!</h1>
+                <p>Your account has been successfully verified. You can now log in to your account.</p>
+                <p><span class="link">You can now login to your account</span></p>
+            `;
+            res.send(getHtmlPageTemplate(successContent, true));
         } catch (error) {
             console.error('Error verifying email:', error);
-            res.status(500).send(`
-                <html>
-                <head>
-                    <title>Server Error</title>
-                    <style>
-                        body {
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                            background-color: #121212;
-                            color: #e0e0e0;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            height: 100vh;
-                            margin: 0;
-                        }
-                        .container {
-                            background-color: #1e1e1e;
-                            padding: 2rem;
-                            border-radius: 8px;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                            text-align: center;
-                            max-width: 400px;
-                        }
-                        .error-icon {
-                            color: #d32f2f;
-                            font-size: 48px;
-                            margin-bottom: 1rem;
-                        }
-                        h1 {
-                            color: #d32f2f;
-                            margin-bottom: 1rem;
-                        }
-                        p {
-                            margin-bottom: 1.5rem;
-                            line-height: 1.5;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="error-icon">❌</div>
-                        <h1>Server Error</h1>
-                        <p>An error occurred while verifying your email. Please try again later.</p>
-                    </div>
-                </body>
-                </html>
-            `);
+            
+            const errorContent = `
+                <h1>Server Error</h1>
+                <p>An error occurred while verifying your email. Please try again later.</p>
+            `;
+            res.status(500).send(getHtmlPageTemplate(errorContent, false));
         }
     }
 
@@ -425,35 +366,23 @@ class AuthController {
             const resetToken = crypto.randomBytes(32).toString('hex');
             const resetUrl = `${process.env.BACKEND_API_URL}/auth/reset-password?token=${resetToken}&email=${user.email}`;
 
-            // Set token and expiry (1 hour)cd
+            // Set token and expiry (1 hour)
             user.resetPasswordToken = resetToken;
             user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
             await user.save();
 
-            // Send email
-            const transporter = nodemailer.createTransport({
-                host: 'smtp.titan.email',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: process.env.MAIL_USERNAME,
-                    pass: process.env.MAIL_PASSWORD,
-                },
-            });
+            const emailContent = `
+                <h2>Password Reset Request</h2>
+                <p>You requested a password reset. Click the button below to reset your password:</p>
+                <p>If you didn't request this, please ignore this email.</p>
+                <p>This link will expire in 1 hour.</p>
+            `;
 
             const mailOptions = {
                 from: process.env.MAIL_FROM_ADDRESS,
                 to: user.email,
-                subject: 'Password Reset - Clutch AI',
-                html: `
-                    <div style="background-color: #1e1e1e; padding: 20px; color: #e0e0e0;">
-                        <h2>Password Reset Request</h2>
-                        <p>You requested a password reset. Click the link below to reset your password:</p>
-                        <a href="${resetUrl}" style="background-color: #d32f2f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                        <p>If you didn't request this, please ignore this email.</p>
-                        <p>This link will expire in 1 hour.</p>
-                    </div>
-                `
+                subject: 'Password Reset - LEGAL MASTER AI',
+                html: getEmailTemplate(emailContent, 'Reset Password', resetUrl)
             };
 
             await transporter.sendMail(mailOptions);
@@ -583,29 +512,18 @@ class AuthController {
                 otpExpiry
             });
 
-            // Send OTP via email
-            const transporter = nodemailer.createTransport({
-                host: 'smtp.titan.email',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: process.env.MAIL_USERNAME,
-                    pass: process.env.MAIL_PASSWORD,
-                },
-            });
+            const emailContent = `
+                <h2>Your Two-Factor Authentication Code</h2>
+                <p>Your verification code is: <strong>${otp}</strong></p>
+                <p>This code will expire in 5 minutes.</p>
+                <p>If you didn't request this code, please ignore this email.</p>
+            `;
 
             const mailOptions = {
                 from: process.env.MAIL_FROM_ADDRESS,
                 to: user.email,
-                subject: '2FA Code - Clutch AI',
-                html: `
-                <div style="background-color: #1e1e1e; padding: 20px; color: #e0e0e0;">
-                    <h2>Your 2FA Code</h2>
-                    <p>Your verification code is: <strong>${otp}</strong></p>
-                    <p>This code will expire in 5 minutes.</p>
-                    <p>If you didn't request this code, please ignore this email.</p>
-                </div>
-            `
+                subject: '2FA Code - LEGAL MASTER AI',
+                html: getEmailTemplate(emailContent)
             };
 
             await transporter.sendMail(mailOptions);
@@ -701,29 +619,18 @@ class AuthController {
                 otpExpiry
             });
 
-            // Send new OTP via email
-            const transporter = nodemailer.createTransport({
-                host: 'smtp.titan.email',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: process.env.MAIL_USERNAME,
-                    pass: process.env.MAIL_PASSWORD,
-                },
-            });
+            const emailContent = `
+                <h2>Your New Two-Factor Authentication Code</h2>
+                <p>Your new verification code is: <strong>${otp}</strong></p>
+                <p>This code will expire in 5 minutes.</p>
+                <p>If you didn't request this code, please ignore this email.</p>
+            `;
 
             const mailOptions = {
                 from: process.env.MAIL_FROM_ADDRESS,
                 to: user.email,
-                subject: 'New 2FA Code - Clutch AI',
-                html: `
-                <div style="background-color: #1e1e1e; padding: 20px; color: #e0e0e0;">
-                    <h2>Your New 2FA Code</h2>
-                    <p>Your new verification code is: <strong>${otp}</strong></p>
-                    <p>This code will expire in 5 minutes.</p>
-                    <p>If you didn't request this code, please ignore this email.</p>
-                </div>
-            `
+                subject: 'New 2FA Code - LEGAL MASTER AI',
+                html: getEmailTemplate(emailContent)
             };
 
             await transporter.sendMail(mailOptions);
@@ -828,65 +735,23 @@ class AuthController {
             });
 
             if (!user) {
-                return res.send(`
-                    <html>
-                    <head>
-                        <title>Invalid Reset Link</title>
-                        <style>
-                            body {
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                                background-color: #121212;
-                                color: #e0e0e0;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                height: 100vh;
-                                margin: 0;
-                            }
-                            .container {
-                                background-color: #1e1e1e;
-                                padding: 2rem;
-                                border-radius: 8px;
-                                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                                text-align: center;
-                                max-width: 400px;
-                            }
-                            .error-icon {
-                                color: #d32f2f;
-                                font-size: 48px;
-                                margin-bottom: 1rem;
-                            }
-                            h1 {
-                                color: #d32f2f;
-                                margin-bottom: 1rem;
-                            }
-                            p {
-                                margin-bottom: 1.5rem;
-                                line-height: 1.5;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="error-icon">❌</div>
-                            <h1>Invalid Reset Link</h1>
-                            <p>This password reset link is invalid or has expired. Please request a new password reset.</p>
-                        </div>
-                    </body>
-                    </html>
-                `);
+                const errorContent = `
+                    <h1>Invalid Reset Link</h1>
+                    <p>This password reset link is invalid or has expired. Please request a new password reset.</p>
+                `;
+                return res.send(getHtmlPageTemplate(errorContent, false));
             }
 
             // If valid, show reset password form
             res.send(`
                 <html>
                 <head>
-                    <title>Reset Password</title>
+                    <title>Reset Password - LEGAL MASTER AI</title>
                     <style>
                         body {
                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                            background-color: #121212;
-                            color: #e0e0e0;
+                            background-color: #ffffff;
+                            color: #000000;
                             display: flex;
                             justify-content: center;
                             align-items: center;
@@ -894,16 +759,30 @@ class AuthController {
                             margin: 0;
                         }
                         .container {
-                            background-color: #1e1e1e;
+                            background-color: #ffffff;
                             padding: 2rem;
                             border-radius: 8px;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                             width: 100%;
                             max-width: 400px;
+                            border: 1px solid #e0e0e0;
                         }
                         h1 {
-                            color: #e0e0e0;
+                            color: #000000;
                             margin-bottom: 1.5rem;
+                            text-align: center;
+                        }
+                        h2 {
+                            color: #000000;
+                            margin-bottom: 1.5rem;
+                            text-align: center;
+                        }
+                        .header {
+                            background-color: #BB8A28;
+                            color: #ffffff;
+                            padding: 15px;
+                            border-radius: 8px 8px 0 0;
+                            margin: -2rem -2rem 1.5rem;
                             text-align: center;
                         }
                         .form-group {
@@ -912,21 +791,21 @@ class AuthController {
                         label {
                             display: block;
                             margin-bottom: 0.5rem;
-                            color: #a0a0a0;
+                            color: #555555;
                         }
                         input {
                             width: 100%;
                             padding: 0.75rem;
-                            border: 1px solid #333;
+                            border: 1px solid #cccccc;
                             border-radius: 4px;
-                            background-color: #2d2d2d;
-                            color: #e0e0e0;
+                            background-color: #ffffff;
+                            color: #000000;
                             margin-bottom: 0.5rem;
                         }
                         button {
                             width: 100%;
                             padding: 0.75rem;
-                            background-color: #d32f2f;
+                            background-color: #BB8A28;
                             color: white;
                             border: none;
                             border-radius: 4px;
@@ -934,7 +813,7 @@ class AuthController {
                             font-size: 1rem;
                         }
                         button:hover {
-                            background-color: #b71c1c;
+                            background-color: #9E7320;
                         }
                         .error {
                             color: #d32f2f;
@@ -952,7 +831,10 @@ class AuthController {
                 </head>
                 <body>
                     <div class="container">
-                        <h1>Reset Password</h1>
+                        <div class="header">
+                            <h1>LEGAL MASTER AI</h1>
+                        </div>
+                        <h2>Reset Password</h2>
                         <form id="resetForm" onsubmit="return handleSubmit(event)">
                             <div class="form-group">
                                 <label for="newPassword">New Password</label>
@@ -1046,53 +928,12 @@ class AuthController {
             `);
         } catch (error) {
             console.error('Error in resetPasswordPage:', error);
-            res.status(500).send(`
-                <html>
-                <head>
-                    <title>Server Error</title>
-                    <style>
-                        body {
-                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                            background-color: #121212;
-                            color: #e0e0e0;
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            height: 100vh;
-                            margin: 0;
-                        }
-                        .container {
-                            background-color: #1e1e1e;
-                            padding: 2rem;
-                            border-radius: 8px;
-                            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-                            text-align: center;
-                            max-width: 400px;
-                        }
-                        .error-icon {
-                            color: #d32f2f;
-                            font-size: 48px;
-                            margin-bottom: 1rem;
-                        }
-                        h1 {
-                            color: #d32f2f;
-                            margin-bottom: 1rem;
-                        }
-                        p {
-                            margin-bottom: 1.5rem;
-                            line-height: 1.5;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="error-icon">❌</div>
-                        <h1>Server Error</h1>
-                        <p>An error occurred while processing your request. Please try again later.</p>
-                    </div>
-                </body>
-                </html>
-            `);
+            
+            const errorContent = `
+                <h1>Server Error</h1>
+                <p>An error occurred while processing your request. Please try again later.</p>
+            `;
+            res.status(500).send(getHtmlPageTemplate(errorContent, false));
         }
     }
 
@@ -1133,7 +974,7 @@ class AuthController {
             if (profileImage) {
                 // Extract the base64 data (remove data:image/xyz;base64, prefix)
                 const base64Data = profileImage.split(';base64,').pop();
-                
+
                 // Generate unique filename
                 const filename = `${Date.now()}-${userId}.png`;
                 const filePath = `uploads/profiles/${filename}`;
@@ -1186,7 +1027,7 @@ class AuthController {
             }
 
             const isMatch = await bcrypt.compare(password, user.password);
-            
+
             res.status(200).json({
                 isValid: isMatch,
                 message: isMatch ? 'Password is valid' : 'Password is invalid'

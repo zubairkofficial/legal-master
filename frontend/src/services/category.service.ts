@@ -31,8 +31,41 @@ interface UpdateCategoryData {
 // Category Service
 const categoryService = {
   getAllCategories: async (): Promise<CategoryResponse> => {
-    const response = await api.get("/categories");
-    return response.data;
+    try {
+      console.log('Fetching categories from API');
+      const response = await api.get("/categories");
+      console.log('Categories API response:', response);
+      
+      // Make sure we're returning the expected structure
+      if (response.data && response.data.data) {
+        return response.data;
+      } else if (Array.isArray(response.data)) {
+        // If the API returns an array directly, reformat it
+        return {
+          data: response.data,
+          pagination: {
+            page: 1,
+            limit: response.data.length,
+            pages: 1,
+            total: response.data.length
+          }
+        };
+      } else {
+        console.error('Unexpected API response format:', response.data);
+        return {
+          data: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            pages: 0,
+            total: 0
+          }
+        };
+      }
+    } catch (error) {
+      console.error('Error in getAllCategories:', error);
+      throw error;
+    }
   },
 
   getCategoryById: async (id: string): Promise<Category> => {
