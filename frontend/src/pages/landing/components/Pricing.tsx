@@ -1,4 +1,3 @@
-import { useTheme } from "../../../components/theme/theme-provider";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Check } from "lucide-react";
@@ -47,7 +46,6 @@ const pricingPlans = [
 ];
 
 export default function Pricing() {
-  const { theme } = useTheme();
   
   return (
     <section id="pricing" className="py-16 md:py-24 bg-background">

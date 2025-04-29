@@ -1,6 +1,5 @@
 import api from "./api";
 import { Pagination } from "@/types/types";
-import axios from "axios";
 
 export interface ChatResponse {
   data: Chat[];
@@ -58,11 +57,7 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-interface ChatApiResponse {
-  success: boolean;
-  data: Chat | { id: string; title: string };
-  message: string;
-}
+
 
 // Chat Service
 const chatService = {

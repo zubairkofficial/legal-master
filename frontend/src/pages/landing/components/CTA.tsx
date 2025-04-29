@@ -1,9 +1,7 @@
-import { useTheme } from "../../../components/theme/theme-provider";
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../lib/utils";
 
 export default function CTA() {
-  const { theme } = useTheme();
   
   return (
     <section className="py-16 md:py-24 bg-background">

@@ -1,4 +1,3 @@
-import { useTheme } from "../../../components/theme/theme-provider";
 import { cn } from "../../../lib/utils";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
@@ -42,7 +41,6 @@ const testimonials = [
 ];
 
 export default function Testimonials() {
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
   
@@ -62,7 +60,7 @@ export default function Testimonials() {
         <div className="relative">
           {/* Desktop testimonials display */}
           <div className="hidden md:grid grid-cols-3 gap-6">
-            {testimonials.slice(0, 3).map((testimonial, index) => (
+            {testimonials.slice(0, 3).map((testimonial) => (
               <TestimonialCard key={testimonial.id} testimonial={testimonial} />
             ))}
           </div>

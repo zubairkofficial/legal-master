@@ -26,7 +26,7 @@ export function EditCategoryForm({ category, onSuccess, onCancel }: EditCategory
     setFormData({
       name: category.name,
       description: category.description,
-      isActive: category.isActive
+      isActive: category.status
     });
   }, [category]);
 

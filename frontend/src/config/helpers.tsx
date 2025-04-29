@@ -3,7 +3,7 @@ import Toast from "../components/common/toast";
 
 class Helpers {
   static localhost: string = "http://localhost:8080";
-  static server: string = "https://api.example.com";
+  static server: string = "http://13.60.9.217/backend";
   static basePath: string = Helpers.localhost;
   static apiUrl: string = `${Helpers.basePath}/api/v1`;
 

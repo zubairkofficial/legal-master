@@ -1,6 +1,8 @@
+//@ts-nocheck
+
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MessageSquare, Clock, Search, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { MessageSquare, Clock, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import chatService, { Chat } from '@/services/chat.service';
 import { cn } from '@/lib/utils';

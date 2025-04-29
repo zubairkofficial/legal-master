@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTheme } from "../../components/theme/theme-provider";
 import { Button } from "../../components/ui/button";
 import authService from "../../services/auth.service";
 import Helpers from "../../config/helpers";
 
 export default function ResetPassword() {
-  const { theme } = useTheme();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);

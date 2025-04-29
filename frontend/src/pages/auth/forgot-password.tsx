@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useTheme } from "../../components/theme/theme-provider";
 import { Button } from "../../components/ui/button";
 import authService from "../../services/auth.service";
 import Helpers from "../../config/helpers";
 
 export default function ForgotPassword() {
-  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);

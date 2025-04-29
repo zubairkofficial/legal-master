@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTheme } from "../../../components/theme/theme-provider";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../../components/ui/button";
 import { 
@@ -119,7 +118,6 @@ function ServiceIcon({ name, className }: { name: string; className?: string }) 
 }
 
 export default function Services() {
-  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("1");
   
   return (

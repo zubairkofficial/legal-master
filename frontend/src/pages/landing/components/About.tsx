@@ -1,8 +1,6 @@
-import { useTheme } from "../../../components/theme/theme-provider";
 import { Button } from "../../../components/ui/button";
 
 export default function About() {
-  const { theme } = useTheme();
   
   return (
     <section className="py-16 md:py-24">

@@ -3,7 +3,6 @@ import SignIn from "./pages/auth/sign-in";
 import SignUp from "./pages/auth/sign-up";
 import ForgotPassword from "./pages/auth/forgot-password";
 import ResetPassword from "./pages/auth/reset-password";
-import Test from "./pages/test";
 import LandingPage from "./pages/landing";
 import AdminDashboard from "./pages/admin";
 import ChatTable from "./pages/admin/chat/chatTable";
@@ -18,10 +17,7 @@ import ProfileSettings from "./pages/profile/ProfileSettings";
 import AdminSettings from "./pages/admin/settings";
 
 const router = createBrowserRouter([
-    {
-        path: "/test",
-        element: <Test />
-    },
+  
     {
         path: "/",
         element: <LandingPage />

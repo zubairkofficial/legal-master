@@ -1,7 +1,7 @@
 import  { useEffect, useState } from "react";
 import { User } from "@/types/types";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, MessagesSquare, ChevronRight, ChevronDown } from "lucide-react";
+import { MessageCircle, MessagesSquare } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import chatService, { Chat, ChatMessage } from "@/services/chat.service";
 import userService from "@/services/user.service";
@@ -16,7 +16,6 @@ export function ChatTable() {
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedChat, setExpandedChat] = useState<string | null>(null);
   const [isChatDetailsOpen, setIsChatDetailsOpen] = useState(false);
   const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);

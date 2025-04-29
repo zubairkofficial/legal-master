@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTheme } from "../../components/theme/theme-provider";
 import { Button } from "../../components/ui/button";
 import authService from "../../services/auth.service";
 import useUserStore from "../../store/useUserStore";
 import Helpers from "../../config/helpers";
 
 export default function SignIn() {
-  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);

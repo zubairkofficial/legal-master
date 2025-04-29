@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
-import { useTheme } from "../theme/theme-provider";
 
 export function Footer() {
-  const { theme } = useTheme();
 
   return (
     <footer className="bg-background border-t border-border">

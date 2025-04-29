@@ -1,4 +1,3 @@
-import { AdminLayout } from "../../components/layout";
 
 export default function AdminDashboard() {
   return (

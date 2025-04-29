@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { X } from "lucide-react";
 import { SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../../../components/ui/sheet";
@@ -56,7 +56,7 @@ export function DeleteCategoryConfirm({ category, onSuccess, onCancel }: DeleteC
         <p className="font-medium">Category details:</p>
         <p><span className="font-medium">Name:</span> {category.name}</p>
         <p><span className="font-medium">Description:</span> {category.description}</p>
-        <p><span className="font-medium">Status:</span> {category.isActive ? 'Active' : 'Inactive'}</p>
+        <p><span className="font-medium">Status:</span> {category.status ? 'Active' : 'Inactive'}</p>
       </div>
 
       <SheetFooter className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-between">

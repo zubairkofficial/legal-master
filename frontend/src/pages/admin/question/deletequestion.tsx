@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { X } from "lucide-react";
 import { SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "../../../components/ui/sheet";
@@ -55,7 +55,7 @@ export function DeleteQuestionConfirm({ question, onSuccess, onCancel }: DeleteQ
         <p className="font-medium">Question details:</p>
         <p><span className="font-medium">Title:</span> {question.title}</p>
         <p><span className="font-medium">Category:</span> {question.category.name}</p>
-        <p><span className="font-medium">Status:</span> {question.isActive ? 'Active' : 'Inactive'}</p>
+        <p><span className="font-medium">Status:</span> {question.status ? 'Active' : 'Inactive'}</p>
       </div>
 
       <SheetFooter className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-between">

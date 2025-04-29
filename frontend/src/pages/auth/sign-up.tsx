@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useTheme } from "../../components/theme/theme-provider";
 import { Button } from "../../components/ui/button";
 import authService from "../../services/auth.service";
 import Helpers from "../../config/helpers";
 
 export default function SignUp() {
-  const { theme } = useTheme();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
