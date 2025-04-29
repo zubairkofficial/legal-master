@@ -1,14 +1,14 @@
 import { Button } from "../../../components/ui/button";
-
+import { useNavigate } from "react-router-dom";
 export default function About() {
-  
+  const navigate = useNavigate();
   return (
     <section className="py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1">
             <img 
-              src="/images/legal-team.webp" 
+              src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=2070&auto=format&fit=crop"
               alt="Team of legal experts" 
               className="rounded-xl shadow-xl w-full h-auto"
               onError={(e) => {
@@ -59,7 +59,7 @@ export default function About() {
               </div>
             </div>
             
-            <Button>
+            <Button onClick={() => navigate("/sign-up")}>
               Try our Legal Assistant
             </Button>
           </div>

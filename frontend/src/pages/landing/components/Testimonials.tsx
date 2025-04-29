@@ -113,7 +113,7 @@ export default function Testimonials() {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button>
+            <Button onClick={() => navigate("/sign-in")}>
               Try AI Consultation
             </Button>
             <Button variant="outline" onClick={() => navigate("/sign-up")}>

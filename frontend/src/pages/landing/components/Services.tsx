@@ -29,8 +29,8 @@ const services = [
       "Dive into our extensive database for detailed insights into case laws, statutes, and legal precedents.",
       "Confidentiality is paramount. Your inquiries and the information provided are protected with the highest standards of privacy."
     ],
-    image: "/images/legal-database.webp",
-    fallbackImage: "https://placehold.co/600x400/BB8A28/FFF?text=Legal+Database",
+    image: "/images/legal-database.jpg",
+    fallbackImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Explore Legal Database"
   },
   {
@@ -44,8 +44,8 @@ const services = [
       "Review existing documents for legal compliance and potential issues.",
       "Track document versions and changes with our comprehensive history system."
     ],
-    image: "/images/legal-document.webp",
-    fallbackImage: "https://placehold.co/600x400/BB8A28/FFF?text=Legal+Documents",
+    image: "/images/legal-document.jpg",
+    fallbackImage: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Create Documents"
   },
   {
@@ -59,8 +59,8 @@ const services = [
       "Get answers to complex legal questions with supporting case citations and statutes.",
       "Available 24/7 to assist with urgent legal inquiries when you need guidance most."
     ],
-    image: "/images/legal-consultancy.webp",
-    fallbackImage: "https://placehold.co/600x400/BB8A28/FFF?text=Legal+Consultancy",
+    image: "/images/legal-consultancy.jpg",
+    fallbackImage: "https://images.unsplash.com/photo-1573497620053-ea5300f94f21?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Consult Now"
   },
   {
@@ -74,8 +74,8 @@ const services = [
       "Extract key insights and action items from recorded conversations.",
       "Secure storage with end-to-end encryption to protect sensitive legal discussions."
     ],
-    image: "/images/voice-recording.webp",
-    fallbackImage: "https://placehold.co/600x400/BB8A28/FFF?text=Voice+Recording",
+    image: "/images/voice-recording.jpg",
+    fallbackImage: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Start Recording"
   },
   {
@@ -89,8 +89,8 @@ const services = [
       "Identify potential weaknesses in your arguments before entering the actual courtroom.",
       "Receive detailed feedback and improvement suggestions based on legal precedent and best practices."
     ],
-    image: "/images/mock-trials.webp",
-    fallbackImage: "https://placehold.co/600x400/BB8A28/FFF?text=Mock+Trials",
+    image: "/images/mock-trials.jpg",
+    fallbackImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Simulate Trial"
   }
 ];
@@ -193,7 +193,9 @@ export default function Services() {
                     alt={service.title} 
                     className="w-full h-auto object-cover aspect-video"
                     onError={(e) => {
-                      e.currentTarget.src = service.fallbackImage;
+                      const target = e.target as HTMLImageElement;
+                      target.src = service.fallbackImage;
+                      target.onerror = null; // Prevent infinite loop
                     }}
                   />
                 </div>

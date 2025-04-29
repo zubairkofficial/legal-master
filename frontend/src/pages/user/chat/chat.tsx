@@ -399,8 +399,7 @@ const Chat = () => {
     >
       <div className="h-2 bg-[#BB8A28]" />
       <div className="p-6">
-        <h2 className="text-xl font-semibold mb-2">{category.name}</h2>
-        <p className="text-muted-foreground">{category.description}</p>
+        <h2 className="text-xl font-semibold mb-2">{category.description}</h2>
       </div>
     </div>
   );
@@ -579,8 +578,7 @@ const Chat = () => {
                           )}
                         </div>
                         <div>
-                          <h2 className="text-xl font-semibold mb-2">{question.title}</h2>
-                          <p className="text-muted-foreground">{question.content}</p>
+                          <h2 className="text-xl font-semibold mb-2">{question.content}</h2>
                         </div>
                       </div>
                     </div>
