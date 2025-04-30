@@ -29,11 +29,6 @@ const Settings = initSettingsModel(sequelize);
 
 // Define associations
 
-// User associations
-User.hasMany(Chat, {
-    foreignKey: 'userId',
-    as: 'chats',
-});
 
 User.hasMany(Message, {
     foreignKey: 'senderId',
@@ -50,6 +45,13 @@ Category.hasMany(Question, {
 Question.belongsTo(Category, {
     foreignKey: 'categoryId',
     as: 'category',
+});
+
+
+// User associations
+User.hasMany(Chat, {
+    foreignKey: 'userId',
+    as: 'chats',
 });
 
 // Chat associations

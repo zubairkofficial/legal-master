@@ -22,10 +22,9 @@ class ChatController {
 
             const metadata = {
                 ...req.body,
-                legalQuestionnaire: req.body.legalQuestionnaire,
-                questionResponses: req.body.questionResponses,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                form: req.body.legalQuestionnaire,
+                question: req.body.questionResponses
+
             };
 
             // Create the chat in database
@@ -58,6 +57,7 @@ class ChatController {
     static async streamInitialMessage(req, res) {
         try {
             const { id } = req.params;
+
             const userId = req.user.id;
 
             // Set up response headers for SSE
@@ -91,10 +91,12 @@ class ChatController {
             const systemPrompt = `You are a Virtual Legal Drafting Assistant trained to conduct role-specific legal questionnaires for users involved in civil or criminal cases in different jurisdictions. Your goal is to gather clear, complete, and relevant information based on the user's role (e.g., plaintiff or defendant), legal jurisdiction (country and province/state), and case description.
 
             In this session:
-            - Jurisdiction: **${metadata.legalQuestionnaire?.country}**, Province: **${metadata.legalQuestionnaire?.province}**.
-            - The user is acting as the **${metadata.legalQuestionnaire?.role}**.
+            - Jurisdiction: **${metadata.form?.country}**, Province: **${metadata.form?.state}**.
+            - The user is acting as the **${metadata.form?.role}**.
             - Case Description: 
-            "${metadata.legalQuestionnaire?.caseDescription}"
+            "${metadata.form?.description}"
+
+            Futher metadata: users Query: ${metadata.question[0].question}
             
             \nThe Virtual Legal Drafting Assistant is an AI-powered entity utilizing the ChatGPT API, specifically designed to assist with various legal matters and legal document drafting. It serves as a reliable partner for legal professionals, offering expert guidance, generating legally sound content, and providing valuable insights in the field of law.
             \n\nResponsibilities:

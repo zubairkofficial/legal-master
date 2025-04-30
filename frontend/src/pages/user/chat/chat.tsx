@@ -61,8 +61,8 @@ const Chat = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  // Changed from array to single string to enforce single selection
-  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
+  // Changed from string to Question type to store full question object
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [questionResponses, setQuestionResponses] = useState<ChatQuestionResponse[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -264,9 +264,12 @@ const Chat = () => {
     }
   };
 
-  // Modified to set a single question instead of toggling in an array
+  // Modified to set the full question object instead of just ID
   const handleQuestionSelect = (questionId: string) => {
-    setSelectedQuestion(questionId);
+    const question = questions.find(q => q.id === questionId);
+    if (question) {
+      setSelectedQuestion(question);
+    }
   };
 
   const handleQuestionSubmit = () => {
@@ -274,8 +277,8 @@ const Chat = () => {
     
     // Create response for the selected question
     const response = {
-      questionId: selectedQuestion,
-      answer: '',
+      questionId: selectedQuestion.id,
+      question: selectedQuestion.content,
     };
     
     setQuestionResponses([response]);
@@ -557,7 +560,7 @@ const Chat = () => {
                   <div 
                     key={question.id} 
                     className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
-                      selectedQuestion === question.id 
+                      selectedQuestion === question 
                         ? 'bg-[#BB8A28] bg-opacity-10 border-[#BB8A28]' 
                         : 'bg-card border-border'
                     }`}
@@ -567,11 +570,11 @@ const Chat = () => {
                     <div className="p-6">
                       <div className="flex items-start">
                         <div className={`w-6 h-6 rounded-full border mr-4 flex-shrink-0 flex items-center justify-center ${
-                          selectedQuestion === question.id
+                          selectedQuestion === question
                             ? 'bg-[#BB8A28] border-[#BB8A28]'
                             : 'border-input'
                         }`}>
-                          {selectedQuestion === question.id && (
+                          {selectedQuestion === question && (
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
