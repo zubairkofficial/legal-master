@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, Menu, LogOut, Settings } from "lucide-react";
-import { useTheme } from "../theme/theme-provider";
+import { Scale, Menu, LogOut, Settings, Coins, DollarSign } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Sidebar } from "./Sidebar";
 import useUserStore from "@/store/useUserStore";
+import { CreditsPopup } from "../credits/CreditsPopup";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,12 +20,10 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
-  const { theme, setTheme } = useTheme();
   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
   const { clearUser } = useUserStore();
-
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
   const handleLogout = () => {
     // Clear user data from store
@@ -63,43 +62,34 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
 
         {/* Search */}
         <div className="hidden md:flex items-center relative max-w-md w-full">
-        
+
         </div>
 
         {/* Right side icons and profile */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative p-0 h-9 w-9">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </Button>
+          {/* Credits Display - Only show for user variant */}
+          {variant === "user" && (
+            <> <div className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg">
+              <Coins className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-primary">
+                {user?.credits || 0} Credits
+              </span>
 
-          {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            className="p-0 h-9 w-9"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
-            )}
-          </Button>
+            </div>
+              <Button 
+                onClick={() => navigate('/user/trial')} 
+                variant="ghost" 
+                className="hidden lg:flex items-center space-x-2 ml-4 hover:bg-primary/50 transition-colors duration-200"
+              >
+                <div className="flex items-center space-x-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Mock Trials</span>
+                </div>
+              </Button>
+            </>
+          )}
+
+     
 
           {/* Profile Avatar with Dropdown */}
           <DropdownMenu>
@@ -142,6 +132,12 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
+              {variant == 'user' && <DropdownMenuItem asChild>
+                <Link to={"/chat/products"} className="cursor-pointer">
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  <span>Upgrade</span>
+                </Link>
+              </DropdownMenuItem>}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500">
                 <LogOut className="mr-2 h-4 w-4" />
@@ -151,6 +147,13 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Credits Popup */}
+      {variant === "user" && (
+        <>
+
+          <CreditsPopup isOpen={isCreditsOpen} onClose={() => setIsCreditsOpen(false)} />
+        </>)}
     </header>
   );
 } 

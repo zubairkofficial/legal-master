@@ -79,6 +79,11 @@ export default function initUserModel(sequelize) {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            credits: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0
+            },
             isActive: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: false,
@@ -110,6 +115,11 @@ export default function initUserModel(sequelize) {
             profileImage: {
                 type: DataTypes.STRING,
                 allowNull: true,
+            },
+            customerId: {
+                type: DataTypes.STRING,
+                allowNull: true,
+                comment: 'Square customer ID'
             },
         },
         {

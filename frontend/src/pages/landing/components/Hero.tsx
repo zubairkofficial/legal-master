@@ -1,8 +1,7 @@
-import { useNavigate } from "react-router";
+import { Link } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 
 export default function Hero() {
-  const navigate = useNavigate();
   return (
     <section className="py-20 md:py-32 bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
       {/* Background decoration */}
@@ -24,11 +23,11 @@ export default function Hero() {
             AI Lawyer chatbot. Get instant answers to your legal questions, 24/7.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <Button size="lg" onClick={()=>{navigate('/sign-in')}} className="bg-[#BB8A28] hover:bg-[#BB8A28]/90 transition-all duration-300">
-              Get Started
+            <Button size="lg" className="bg-[#BB8A28] hover:bg-[#BB8A28]/90 transition-all duration-300">
+              <Link to='/sign-in'>Get Started</Link>
             </Button>
-            <Button size="lg" variant="outline" onClick={()=>{navigate('/sign-in')}} className="border-[#BB8A28] text-[#BB8A28] hover:bg-[#BB8A28]/10 transition-all duration-300">
-              Try Legal Assistant
+            <Button size="lg" variant="outline"  className="border-[#BB8A28] text-[#BB8A28] hover:bg-[#BB8A28]/10 transition-all duration-300">
+              <Link to='sign-in'>Try Legal Assistant</Link>
             </Button>
           </div>
         </div>
@@ -38,7 +37,7 @@ export default function Hero() {
           <div className="relative w-full max-w-2xl h-auto group">
             <div className="absolute inset-0 bg-[#BB8A28]/10 rounded-2xl -z-10 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
             <img 
-              src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1000&auto=format&fit=crop"
+              src="/assets/hero.jpg"
               alt="AI Legal Assistant" 
               className="w-full h-auto object-cover rounded-2xl shadow-2xl transform group-hover:scale-[1.02] transition-all duration-500"
               onError={(e) => {

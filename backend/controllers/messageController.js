@@ -1,5 +1,5 @@
 import { Chat, Message, User, Settings } from '../models/index.js';
-import { OpenAI } from 'openai';
+import { ChatOpenAI } from "@langchain/openai";
 
 class MessageController {
     // Get all messages for a chat
@@ -8,26 +8,26 @@ class MessageController {
             const { chatId } = req.params;
             const userId = req.user.id;
             let chat;
-            
+
             if (req.user.role === 'admin') {
                 // Check if the chat exists and belongs to the user
-                 chat = await Chat.findOne({
+                chat = await Chat.findOne({
                     where: { id: chatId }
                 });
             } else {
                 // Check if the chat exists and belongs to the user
-                 chat = await Chat.findOne({
+                chat = await Chat.findOne({
                     where: { id: chatId, userId }
                 });
             }
-            
+
             if (!chat) {
                 return res.status(404).json({
                     success: false,
                     message: 'Chat not found or you do not have permission to access it'
                 });
             }
-            
+
             // Get messages for the chat
             const messages = await Message.findAll({
                 where: { chatId },
@@ -40,7 +40,7 @@ class MessageController {
                     }
                 ]
             });
-            
+
             // Transform messages to the expected format
             const formattedMessages = messages.map(message => ({
                 id: message.id.toString(),
@@ -49,7 +49,7 @@ class MessageController {
                 sender: message.isUserMessage ? 'user' : 'system',
                 createdAt: message.createdAt
             }));
-            
+
             return res.status(200).json(formattedMessages);
         } catch (error) {
             console.error('Error fetching messages:', error);
@@ -60,38 +60,38 @@ class MessageController {
             });
         }
     }
-    
+
     // Send a new message
     static async sendMessage(req, res) {
         try {
             const { chatId } = req.params;
             const { message } = req.body;
             const userId = req.user.id;
-            
+
             // Set SSE headers immediately
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
             res.flushHeaders();
-            
+
             // Validate request
             if (!message) {
                 res.write(`data: ${JSON.stringify({ error: 'Message content is required' })}\n\n`);
                 res.end();
                 return;
             }
-            
+
             // Check if the chat exists and belongs to the user
             const chat = await Chat.findOne({
                 where: { id: chatId, userId }
             });
-            
+
             if (!chat) {
                 res.write(`data: ${JSON.stringify({ error: 'Chat not found or you do not have permission to access it' })}\n\n`);
                 res.end();
                 return;
             }
-            
+
             // Create the user message
             const userMessage = await Message.create({
                 content: message,
@@ -132,29 +132,33 @@ class MessageController {
                 }
             });
 
-            const openai = new OpenAI({
-                apiKey: settings.apiKey,
-            });
-
-            // Call OpenAI API with streaming enabled
-            const response = await openai.chat.completions.create({
-                model: settings.model || "gpt-4",
-                messages: messages,
-                stream: true,
+            // Initialize ChatOpenAI
+            const chatModel = new ChatOpenAI({
+                openAIApiKey: settings.apiKey,
+                modelName: settings.model || "gpt-4",
+                streaming: true,
             });
 
             let finalMessage = "";
+            let totalTokens = 0;
 
-            for await (const chunk of response) {
-                const content = chunk.choices[0]?.delta?.content || "";
-                finalMessage += content;
-                
-                // Only send non-empty content
-                if (content) {
-                    res.write(`data: ${JSON.stringify({ content, id: chatId })}\n\n`);
-                }
-            }
+            // Call ChatOpenAI with streaming enabled
+            const response = await chatModel.invoke(messages, {
+                callbacks: [
+                    {
+                        handleLLMNewToken(token) {
+                            finalMessage += token;
+                            res.write(`data: ${JSON.stringify({ content: token, id: chatId })}\n\n`);
+                        },
+                        handleLLMEnd(output) {
+                            totalTokens = output.llmOutput?.tokenUsage?.totalTokens || 0;
+                        },
+                    },
+                ],
+            });
 
+            console.log("Response", response);
+            const tokens = response.usage_metadata.total_tokens;
             // Create the AI message in the database
             const aiMessage = await Message.create({
                 content: finalMessage,
@@ -162,6 +166,17 @@ class MessageController {
                 senderId: userId,
                 isUserMessage: false
             });
+
+            // Deduct tokens from user's credits
+            const user = await User.findByPk(userId);
+            if (user && user.credits >= tokens) {
+                user.credits -= tokens;
+                await user.save();
+            } else {
+                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
+                res.end();
+                return;
+            }
 
             res.end();
         } catch (error) {

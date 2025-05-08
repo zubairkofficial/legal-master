@@ -6,7 +6,10 @@ import initQuestionModel from './question.js';
 import initChatModel from './chat.js';
 import initMessageModel from './message.js';
 import initSettingsModel from './settings.js';
-
+import initSubscriptionPlanModel from './subscriptionPlan.js';
+import initSubscriptionModel from './subscription.js';
+import initPaymentMethodModel from './paymentMethod.js';
+import initMockTrialModel from './mockTrial.js';
 dotenv.config();
 
 // Create a new Sequelize instance with database configurations
@@ -26,7 +29,10 @@ const Question = initQuestionModel(sequelize);
 const Chat = initChatModel(sequelize);
 const Message = initMessageModel(sequelize);
 const Settings = initSettingsModel(sequelize);
-
+const Subscription = initSubscriptionModel(sequelize);
+const SubscriptionPlan = initSubscriptionPlanModel(sequelize);
+const PaymentMethod = initPaymentMethodModel(sequelize);
+const MockTrial = initMockTrialModel(sequelize);
 // Define associations
 
 
@@ -77,5 +83,5 @@ Message.belongsTo(User, {
 });
 
 // Export models and sequelize instance
-export { sequelize, User, Category, Question, Chat, Message, Settings };
+export { sequelize, User, Category, Question, Chat, Message, Settings, SubscriptionPlan, Subscription, PaymentMethod,MockTrial };
 export default sequelize;

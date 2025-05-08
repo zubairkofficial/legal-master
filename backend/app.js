@@ -7,6 +7,10 @@ import userRoutes from './routes/userRoutes.js';
 import userProfileRoutes from './routes/userProfileRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import creditRoutes from './routes/creditRoutes.js'; 
+import trialRoutes from './routes/trialRoutes.js'// Assuming this is for user credits
 const app = express();
 
   // Enable CORS for cross-origin requests
@@ -23,10 +27,11 @@ v1Router.use('/users', userRoutes);
 v1Router.use('/profile', userProfileRoutes);
 v1Router.use('/chats', chatRoutes);
 v1Router.use('/settings', settingsRoutes);
-
-
+v1Router.use('/subscription', subscriptionRoutes);
+v1Router.use('/payment', paymentRoutes);
+v1Router.use('/credits', creditRoutes); // Assuming this is for user credits
+v1Router.use('/trials', trialRoutes)
 app.use('/api/v1', v1Router);
-
 
 app.get('/api/v1/', (req, res) => {
     res.send({ "Hello": "World" })

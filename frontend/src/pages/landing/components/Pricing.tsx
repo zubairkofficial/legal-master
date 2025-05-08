@@ -51,16 +51,16 @@ export default function Pricing() {
     <section id="pricing" className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
             <span className="text-foreground">Transparent </span>
             <span className="text-[#BB8A28]">Legal Pricing</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-4">
             Choose the perfect plan for your legal assistance needs, with no hidden fees.
           </p>
         </div>
         
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-6 sm:gap-8 md:grid-cols-3 px-4 sm:px-6 md:px-8">
           {pricingPlans.map((plan, index) => (
             <Card key={index} className={`${plan.featured ? 'border-[#BB8A28] shadow-lg' : ''} relative`}>
               {plan.featured && (
@@ -69,18 +69,18 @@ export default function Pricing() {
                 </div>
               )}
               <CardHeader>
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardTitle className="text-xl sm:text-2xl">{plan.name}</CardTitle>
+                <CardDescription className="text-sm sm:text-base">{plan.description}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <div>
-                  <span className="text-4xl font-bold">${plan.price}</span>
-                  <span className="text-muted-foreground">/month</span>
+                  <span className="text-3xl sm:text-4xl font-bold">${plan.price}</span>
+                  <span className="text-muted-foreground text-sm sm:text-base">/month</span>
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-2 sm:space-y-3">
                   {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center">
-                      <Check className="mr-2 h-5 w-5 text-[#BB8A28]" />
+                    <li key={i} className="flex items-center text-sm sm:text-base">
+                      <Check className="mr-2 h-4 w-4 sm:h-5 sm:w-5 text-[#BB8A28] flex-shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}

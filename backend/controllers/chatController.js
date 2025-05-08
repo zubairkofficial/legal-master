@@ -2,6 +2,7 @@ import { Chat, Message, User, Settings } from '../models/index.js';
 import { Op } from 'sequelize';
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
+import { ChatOpenAI } from '@langchain/openai';
 
 dotenv.config();
 
@@ -82,8 +83,11 @@ class ChatController {
                 }
             });
 
-            const openai = new OpenAI({
-                apiKey: settings.apiKey,
+            // Initialize ChatOpenAI
+            const chatModel = new ChatOpenAI({
+                openAIApiKey: settings.apiKey,
+                modelName: settings.model || "gpt-4",
+                streaming: true,
             });
 
             const metadata = chat.metadata;
@@ -114,28 +118,29 @@ class ChatController {
             \n- If user query is irrelevent or from another subject Please mention that the question or query is irrelevent 
             `
 
-            const response = await openai.chat.completions.create({
-                model: settings.model,
-                stream: true,
-                messages: [
-                    {
-                        role: "system",
-                        content: systemPrompt
-                    }
-                ]
-            });
-
             let finalMessage = "";
+            let totalTokens = 0;
 
-            for await (const chunk of response) {
-                const content = chunk.choices[0]?.delta?.content || "";
-                finalMessage += content;
-
-                // Make sure each chunk is a complete SSE message
-                if (content) {
-                    res.write(`data: ${JSON.stringify({ content, id: chat.id })}\n\n`);
+            // Call ChatOpenAI with streaming enabled
+            const response = await chatModel.invoke([
+                {
+                    role: "system",
+                    content: systemPrompt
                 }
-            }
+            ], {
+                callbacks: [
+                    {
+                        handleLLMNewToken(token) {
+                            finalMessage += token;
+                            res.write(`data: ${JSON.stringify({ content: token, id: chat.id })}\n\n`);
+                        },
+                        handleLLMEnd(output) {
+                            totalTokens = output.llmOutput?.tokenUsage?.totalTokens || 0;
+                        },
+                    },
+                ],
+            });
+            const tokens = response.usage_metadata.total_tokens;
 
             // Create an initial welcome message from AI
             await Message.create({
@@ -144,6 +149,17 @@ class ChatController {
                 senderId: userId,
                 isUserMessage: false, // AI message
             });
+
+            // Deduct tokens from user's credits
+            const user = await User.findByPk(userId);
+            if (user && user.credits >= tokens) {
+                user.credits -= tokens;
+                await user.save();
+            } else {
+                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
+                res.end();
+                return;
+            }
 
             res.end();
         } catch (error) {

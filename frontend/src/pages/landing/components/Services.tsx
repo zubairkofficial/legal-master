@@ -29,7 +29,7 @@ const services = [
       "Dive into our extensive database for detailed insights into case laws, statutes, and legal precedents.",
       "Confidentiality is paramount. Your inquiries and the information provided are protected with the highest standards of privacy."
     ],
-    image: "/images/legal-database.jpg",
+    image: "/assets/legal-database.png",
     fallbackImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Explore Legal Database"
   },
@@ -44,7 +44,7 @@ const services = [
       "Review existing documents for legal compliance and potential issues.",
       "Track document versions and changes with our comprehensive history system."
     ],
-    image: "/images/legal-document.jpg",
+    image: "/assets/legal-documents.png",
     fallbackImage: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Create Documents"
   },
@@ -59,7 +59,7 @@ const services = [
       "Get answers to complex legal questions with supporting case citations and statutes.",
       "Available 24/7 to assist with urgent legal inquiries when you need guidance most."
     ],
-    image: "/images/legal-consultancy.jpg",
+    image: "/assets/legal-consultancy.png",
     fallbackImage: "https://images.unsplash.com/photo-1573497620053-ea5300f94f21?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Consult Now"
   },
@@ -74,7 +74,7 @@ const services = [
       "Extract key insights and action items from recorded conversations.",
       "Secure storage with end-to-end encryption to protect sensitive legal discussions."
     ],
-    image: "/images/voice-recording.jpg",
+    image: "/images/voice-recording.png",
     fallbackImage: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Start Recording"
   },
@@ -89,7 +89,7 @@ const services = [
       "Identify potential weaknesses in your arguments before entering the actual courtroom.",
       "Receive detailed feedback and improvement suggestions based on legal precedent and best practices."
     ],
-    image: "/images/mock-trials.jpg",
+    image: "/assets/legal-trials.png",
     fallbackImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=2070&auto=format&fit=crop",
     ctaText: "Simulate Trial"
   }
@@ -138,12 +138,12 @@ export default function Services() {
           className="w-full"
         >
           <div className="flex justify-center mb-12">
-            <TabsList className="bg-background/80 backdrop-blur-sm border p-1 gap-1">
+            <TabsList className="bg-background/80 backdrop-blur-sm border p-1 gap-1 flex-wrap">
               {services.map(service => (
                 <TabsTrigger 
                   key={service.id} 
                   value={service.id.toString()}
-                  className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-[#BB8A28] data-[state=active]:text-white"
+                  className="flex items-center gap-2 px-2 sm:px-4 py-2 text-sm sm:text-base data-[state=active]:bg-[#BB8A28] data-[state=active]:text-white"
                 >
                   <span className="hidden md:inline-flex w-5 h-5 text-current">
                     <ServiceIcon name={service.icon} />
@@ -160,27 +160,27 @@ export default function Services() {
               value={service.id.toString()} 
               className="mt-2 focus-visible:outline-none focus-visible:ring-0"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                <div className="space-y-6 order-2 md:order-1">
-                  <h3 className="text-2xl md:text-3xl font-bold text-[#BB8A28]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-center">
+                <div className="space-y-4 md:space-y-6 order-2 md:order-1">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#BB8A28]">
                     {service.title}: <span className="text-foreground font-medium">Your Gateway to Legal Excellence</span>
                   </h3>
-                  <p className="text-muted-foreground">
+                  <p className="text-muted-foreground text-sm sm:text-base">
                     {service.detailedDescription}
                   </p>
                   
-                  <ul className="space-y-4">
+                  <ul className="space-y-3 md:space-y-4">
                     {service.benefits.map((benefit, index) => (
                       <li key={index} className="flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-[#BB8A28] flex items-center justify-center text-white">
-                          <CheckCircle className="w-4 h-4" />
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#BB8A28] flex items-center justify-center text-white flex-shrink-0">
+                          <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                         </div>
-                        <p>{benefit}</p>
+                        <p className="text-sm sm:text-base">{benefit}</p>
                       </li>
                     ))}
                   </ul>
                   
-                  <Button className="bg-[#BB8A28] hover:bg-[#BB8A28]/90 gap-2 mt-4">
+                  <Button className="bg-[#BB8A28] hover:bg-[#BB8A28]/90 gap-2 mt-4 w-full sm:w-auto">
                     {service.ctaText}
                     <ArrowRight className="w-4 h-4" />
                   </Button>
@@ -195,7 +195,7 @@ export default function Services() {
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = service.fallbackImage;
-                      target.onerror = null; // Prevent infinite loop
+                      target.onerror = null;
                     }}
                   />
                 </div>

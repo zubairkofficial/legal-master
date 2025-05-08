@@ -1,5 +1,6 @@
 import api from "./api";
 import { Pagination } from "@/types/types";
+import axios from "axios";
 
 export interface ChatResponse {
   data: Chat[];
@@ -57,7 +58,15 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-
+export const fetchUserCredits = async () => {
+  try {
+    const response = await axios.get('/user/credits');
+    return response.data.credits;
+  } catch (error) {
+    console.error('Error fetching user credits:', error);
+    throw error;
+  }
+};
 
 // Chat Service
 const chatService = {
@@ -226,6 +235,16 @@ const chatService = {
   deleteChat: async (chatId: string): Promise<void> => {
     await api.delete(`/chats/${chatId}`);
   },
+
+  fetchUserCredits: async (): Promise<number> => {
+    try {
+      const response = await api.get('/credits');
+      return response.data.credits;
+    } catch (error) {
+      console.error('Error fetching user credits:', error);
+      throw error;
+    }
+  }
 };
 
 export default chatService; 

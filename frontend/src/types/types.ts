@@ -8,6 +8,7 @@ export interface User {
     createdAt?: string;
     isTwoFactorEnabled?: boolean;
     profileImage?: string;
+    credits?: number;
 }
 
 export interface Pagination {

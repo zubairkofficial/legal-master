@@ -38,7 +38,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 transition-transform hover:scale-105">
-            <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+            <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
           </Link>
 
           {/* Desktop Navigation */}

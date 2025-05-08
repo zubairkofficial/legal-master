@@ -47,12 +47,12 @@ export default function Testimonials() {
   return (
     <section className="py-16 md:py-24 bg-card">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-2">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             Trusted by Industry Leaders
           </h2>
-          <div className="w-20 h-1 bg-[#BB8A28] mx-auto"></div>
-          <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+          <div className="w-16 sm:w-20 h-1 bg-[#BB8A28] mx-auto"></div>
+          <p className="text-muted-foreground mt-4 max-w-2xl mx-auto text-sm sm:text-base px-4">
             Join the ranks of top legal firms and businesses that leverage our AI Lawyer for efficient, accurate legal support.
           </p>
         </div>
@@ -66,7 +66,7 @@ export default function Testimonials() {
           </div>
           
           {/* Mobile testimonials carousel */}
-          <div className="md:hidden">
+          <div className="md:hidden px-4">
             <TestimonialCard testimonial={testimonials[activeIndex]} />
             
             <div className="flex justify-center mt-6 space-x-2">
@@ -75,7 +75,7 @@ export default function Testimonials() {
                   key={index}
                   onClick={() => setActiveIndex(index)}
                   className={cn(
-                    "w-3 h-3 rounded-full transition-all",
+                    "w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all",
                     index === activeIndex ? "bg-[#BB8A28]" : "bg-gray-300"
                   )}
                   aria-label={`Go to slide ${index + 1}`}
@@ -85,12 +85,12 @@ export default function Testimonials() {
           </div>
         </div>
         
-        <div className="mt-20 text-center">
-          <div className="inline-flex items-center justify-center p-1 rounded-full bg-card shadow-lg mb-10">
+        <div className="mt-12 sm:mt-20 text-center">
+          <div className="inline-flex items-center justify-center p-1 rounded-full bg-card shadow-lg mb-8 sm:mb-10 overflow-x-auto max-w-full">
             {[...Array(5)].map((_, index) => (
               <div 
                 key={index}
-                className="w-10 h-10 rounded-full bg-gray-200 mx-2 overflow-hidden"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 mx-1 sm:mx-2 overflow-hidden flex-shrink-0"
               >
                 <img 
                   src={testimonials[index % testimonials.length].avatarUrl} 
@@ -104,19 +104,19 @@ export default function Testimonials() {
             ))}
           </div>
           
-          <h3 className="text-2xl md:text-3xl font-bold mb-6">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 px-4">
             Next-Generation <span className="text-[#BB8A28]">Legal</span> Support with AI
           </h3>
           
-          <p className="text-muted-foreground mb-8">
+          <p className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base px-4">
             Sign Up or Experience AI Consultation Today!
           </p>
           
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button onClick={() => navigate("/sign-in")}>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 px-4">
+            <Button onClick={() => navigate("/sign-in")} className="w-full sm:w-auto">
               Try AI Consultation
             </Button>
-            <Button variant="outline" onClick={() => navigate("/sign-up")}>
+            <Button variant="outline" onClick={() => navigate("/sign-up")} className="w-full sm:w-auto">
               Create Free Account
             </Button>
           </div>
@@ -128,9 +128,9 @@ export default function Testimonials() {
 
 function TestimonialCard({ testimonial }: { testimonial: typeof testimonials[0] }) {
   return (
-    <div className="bg-background p-6 rounded-xl shadow-md">
-      <div className="flex items-center mb-4">
-        <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
+    <div className="bg-background p-4 sm:p-6 rounded-xl shadow-md">
+      <div className="flex items-center mb-3 sm:mb-4">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden mr-3 sm:mr-4 flex-shrink-0">
           <img 
             src={testimonial.avatarUrl} 
             alt={testimonial.name} 
@@ -141,12 +141,12 @@ function TestimonialCard({ testimonial }: { testimonial: typeof testimonials[0] 
           />
         </div>
         <div>
-          <h4 className="font-semibold">{testimonial.name}</h4>
-          <p className="text-sm text-muted-foreground">{testimonial.position}</p>
+          <h4 className="font-semibold text-sm sm:text-base">{testimonial.name}</h4>
+          <p className="text-xs sm:text-sm text-muted-foreground">{testimonial.position}</p>
         </div>
       </div>
-      <p className="text-muted-foreground">"{testimonial.content}"</p>
-      <div className="mt-4 flex text-[#BB8A28]">
+      <p className="text-sm sm:text-base text-muted-foreground">"{testimonial.content}"</p>
+      <div className="mt-3 sm:mt-4 flex text-[#BB8A28]">
         {"★★★★★".split("").map((star, i) => (
           <span key={i}>{star}</span>
         ))}

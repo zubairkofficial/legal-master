@@ -61,7 +61,7 @@ export default function SignIn() {
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
         <div className="relative z-10 text-white max-w-md p-12">
           <div className="flex items-center space-x-3 mb-8">
-            <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+            <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
           </div>
           <h2 className="text-3xl font-bold mb-6">AI-Powered Legal Assistance at Your Fingertips</h2>
           <p className="mb-6 text-white/80">
@@ -79,7 +79,7 @@ export default function SignIn() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center space-x-2 mb-8">
-            <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+            <img src="" alt="" className="w-40 h-auto" />
 
           </div>
           

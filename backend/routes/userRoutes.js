@@ -25,4 +25,6 @@ router.put('/:id', UserController.updateUser);
 // Delete user by ID
 router.delete('/:id', UserController.deleteUser);
 
+router.get('/credits', UserController.getUserCredits);
+
 export default router; 

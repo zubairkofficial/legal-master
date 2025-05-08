@@ -7,6 +7,13 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import fs from 'fs';
+import { SquareClient, SquareEnvironment } from "square";
+
+
+const squareClient = new SquareClient({
+    environment: SquareEnvironment.Sandbox,
+    token: "EAAAl0fGitKOGZqZVGwydyJBV_JhGacnWSQXrm02jnMPZ8kf2FQ9DwtzUnNk3wYm",
+});
 
 
 dotenv.config();
@@ -113,7 +120,7 @@ const getHtmlPageTemplate = (content, isSuccess = true) => {
     const iconType = isSuccess ? '✅' : '❌';
     const iconColor = isSuccess ? '#4caf50' : '#d32f2f';
     const titleColor = isSuccess ? '#4caf50' : '#d32f2f';
-    
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -170,6 +177,7 @@ const getHtmlPageTemplate = (content, isSuccess = true) => {
 </html>`;
 };
 
+
 class AuthController {
 
     static async sendConfirmationEmail(user) {
@@ -203,10 +211,24 @@ class AuthController {
         }
     }
 
+    static async createSquareCustomer(user) {
+        try {
+            const response = await squareClient.customers.create({
+                idempotencyKey: crypto.randomBytes(32).toString('hex'),
+                givenName: user.name,
+                emailAddress: user.email,
+            });
+
+            return response.customer.id;
+        } catch (error) {
+            console.error('Error creating Square customer:', error);
+            throw new Error(`Error creating Square customer: ${error.message}`);
+        }
+    }
+
     static async signup(req, res) {
         const { name, email, password, username } = req.body;
 
-        // Validate password length
         try {
             // Check if email already exists
             const existingUserByEmail = await User.findOne({ where: { email } });
@@ -225,9 +247,18 @@ class AuthController {
                 name,
                 email,
                 username,
-                password, // Assuming the User model has a hook to hash the password automatically
+                password,
                 role: 'user',
             });
+
+            // Create Square customer
+            try {
+                const customerId = await AuthController.createSquareCustomer(newUser);
+                await newUser.update({ customerId });
+            } catch (error) {
+                console.error('Error creating Square customer:', error);
+                // Continue with signup even if Square customer creation fails
+            }
 
             // Send confirmation email
             await AuthController.sendConfirmationEmail(newUser);
@@ -280,7 +311,7 @@ class AuthController {
             res.send(getHtmlPageTemplate(successContent, true));
         } catch (error) {
             console.error('Error verifying email:', error);
-            
+
             const errorContent = `
                 <h1>Server Error</h1>
                 <p>An error occurred while verifying your email. Please try again later.</p>
@@ -341,6 +372,7 @@ class AuthController {
                     username: user.username,
                     isActive: user.isActive,
                     role: user.role,
+                    credits: user.credits,
                     isTwoFactorEnabled: user.isTwoFactorEnabled,
                     profileImage: user.profileImage
                 },
@@ -928,7 +960,7 @@ class AuthController {
             `);
         } catch (error) {
             console.error('Error in resetPasswordPage:', error);
-            
+
             const errorContent = `
                 <h1>Server Error</h1>
                 <p>An error occurred while processing your request. Please try again later.</p>

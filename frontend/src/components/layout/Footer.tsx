@@ -9,7 +9,7 @@ export function Footer() {
           <div>
             <div className="flex items-center space-x-2 mb-6">
               <Link to="/" className="flex items-center space-x-2">
-                <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+                <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
               </Link>
             </div>
             <p className="text-muted-foreground">

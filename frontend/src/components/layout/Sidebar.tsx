@@ -12,7 +12,9 @@ import {
   MessagesSquare,
   User,
   Users2,
-  MessageSquareIcon
+  MessageSquareIcon,
+  DollarSign,
+  Gavel
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -32,7 +34,9 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
     { href: "/admin/categories", icon: FileText, label: "Categories" },
     { href: "/admin/questions", icon: BarChart3, label: "Questions" },
     { href: "/admin/chats", icon: MessageSquareIcon, label: "Chats" },
+    { href: "/admin/trials", icon: Gavel, label: "Trials" },
     { href: "/admin/settings", icon: Settings, label: "Settings" },
+    { href: "/admin/subscriptions", icon: DollarSign, label: "Subscriptions" },
   ];
 
   const userLinks = [
@@ -56,12 +60,12 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
     >
       <div className="p-4 flex items-center justify-between border-b border-border">
         {!collapsed && (
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/chat/new" className="flex items-center space-x-2">
             <div className={` ${variant === "admin" ? "w-8 h-8 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold" : ""}`}>
               {variant === "admin" ? "A": ""}
             </div>
             <span className="text-lg font-semibold">
-              {variant === "admin" ? "Admin" : <img src="https://legalmasterai.com/app/logo.png" alt="" className="w-40 h-auto" />
+              {variant === "admin" ? "Admin" : <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
               }
             </span>
           </Link>

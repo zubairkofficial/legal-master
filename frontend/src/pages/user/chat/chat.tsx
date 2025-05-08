@@ -379,6 +379,11 @@ const Chat = () => {
           });
         }
       );
+
+      // Fetch and update user credits after sending the message
+      const credits = await chatService.fetchUserCredits();
+      useUserStore.getState().setUser({ ...user, credits });
+
     } catch (error) {
       console.error('Error sending message:', error);
       setApiError(`Error sending message: ${error instanceof Error ? error.message : 'Unknown error'}`);

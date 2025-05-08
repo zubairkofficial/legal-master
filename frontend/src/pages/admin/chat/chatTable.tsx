@@ -123,7 +123,9 @@ export function ChatTable() {
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                users
+                  .filter(user => userChats[user.id]?.length > 0)
+                  .map((user) => (
                   <tr key={user.id} className="hover:bg-muted/50">
                     <td className="p-3 border-b">
                       <div className="flex items-center gap-3">

@@ -16,6 +16,13 @@ import Auth from "./components/auth";
 import ProfileSettings from "./pages/profile/ProfileSettings";
 import AdminSettings from "./pages/admin/settings";
 
+import SubscriptionManagement from "./pages/admin/subscription";
+import Products from "./pages/products";
+import MockTrials from "./pages/user/trial/mockTrials";
+import TrialAnalysis from "./pages/user/trial/trialAnalysis";
+import TrialHistory from "./pages/user/trial/trialHistory";
+import TrialsPage from "./pages/admin/trials";
+
 const router = createBrowserRouter([
   
     {
@@ -41,6 +48,10 @@ const router = createBrowserRouter([
     {
         path: "/reset-password",
         element: <ResetPassword />
+    },
+    {
+        path: "/products",
+        element: <Auth isAuth={true}><Products /></Auth>
     },
     // Admin routes
     {
@@ -74,13 +85,17 @@ const router = createBrowserRouter([
             {
                 path: "settings",
                 element: <AdminSettings />
+            },
+            {
+                path: "subscriptions",
+                element: <SubscriptionManagement />
+            },
+            {
+                path: "trials",
+                element: <TrialsPage />
             }
         ]
     },
-    // User routes
- {
-
- },
     // User routes
     {
         path: "/chat",
@@ -97,6 +112,28 @@ const router = createBrowserRouter([
             {
                 path: "profile",
                 element: <ProfileSettings />
+            },
+            {
+                path: "products",
+                element: <Products />
+            }
+        ]
+    },
+    {
+        path: "/user",
+        element: <Auth isAuth={true}><UserLayout/></Auth>,
+        children: [
+            {
+                path: "trial",
+                element: <MockTrials />
+            },
+            {
+                path: "trial/analysis",
+                element: <TrialAnalysis />
+            },
+            {
+                path: "trial/history",
+                element: <TrialHistory />
             }
         ]
     }
