@@ -16,8 +16,7 @@ class QuestionController {
             
             const questions = await Question.findAndCountAll({
                 where,
-                limit: parseInt(limit),
-                offset: parseInt(offset),
+              
                 include: [
                     {
                         model: Category,

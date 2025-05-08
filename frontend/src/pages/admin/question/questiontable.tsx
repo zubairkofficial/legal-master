@@ -95,6 +95,7 @@ export function QuestionTable() {
             <thead className="bg-muted">
               <tr>
                 <th className="text-left p-3 border-b">Title</th>
+                <th className="text-left p-3 border-b">Content</th>
                 <th className="text-left p-3 border-b">Category</th>
                 <th className="text-left p-3 border-b">Status</th>
                 <th className="text-center p-3 border-b">Actions</th>
@@ -111,6 +112,7 @@ export function QuestionTable() {
                 questions.map((question) => (
                   <tr key={question.id} className="hover:bg-muted/50">
                     <td className="p-3 border-b">{question.title}</td>
+                    <td className="p-3 border-b">{question.content}</td>
                     <td className="p-3 border-b">
                       <span className="px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-800">
                         {question.category.name}
