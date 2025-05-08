@@ -1,4 +1,4 @@
-import  { useEffect, useState } from "react";
+import  { useEffect, useState, useCallback } from "react";
 import { User } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, MessagesSquare } from "lucide-react";
@@ -21,7 +21,7 @@ export function ChatTable() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedChatTitle, setSelectedChatTitle] = useState("");
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const users = await userService.getAllUsers();
@@ -49,11 +49,11 @@ export function ChatTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const handleViewChatHistory = async (user: User, chatId: string) => {
     try {

@@ -74,6 +74,14 @@ class MessageController {
             res.setHeader('Connection', 'keep-alive');
             res.flushHeaders();
 
+            // Check if the user has sufficient credits
+            const user = await User.findByPk(userId);
+            if (user && user.credits < 50) {
+                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
+                res.end();
+                return;
+            }
+
             // Validate request
             if (!message) {
                 res.write(`data: ${JSON.stringify({ error: 'Message content is required' })}\n\n`);
@@ -168,11 +176,13 @@ class MessageController {
             });
 
             // Deduct tokens from user's credits
-            const user = await User.findByPk(userId);
             if (user && user.credits >= tokens) {
+
                 user.credits -= tokens;
                 await user.save();
             } else {
+                user.credits = 0
+                await user.save();
                 res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
                 res.end();
                 return;

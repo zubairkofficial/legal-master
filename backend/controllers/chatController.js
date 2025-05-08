@@ -38,9 +38,9 @@ class ChatController {
             // Return chat ID to client
             return res.status(201).json({
                 success: true,
-                data: { 
+                data: {
                     id: chat.id,
-                    title: chat.title 
+                    title: chat.title
                 },
                 message: 'Chat created successfully'
             });
@@ -153,9 +153,18 @@ class ChatController {
             // Deduct tokens from user's credits
             const user = await User.findByPk(userId);
             if (user && user.credits >= tokens) {
-                user.credits -= tokens;
-                await user.save();
+                if (tokens > user.credits) {
+                    user.credits = 0;
+                    await user.save();
+                }
+                else {
+                    user.credits -= tokens;
+                    await user.save();
+                }
+
             } else {
+                user.credits = 0
+                await user.save();
                 res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
                 res.end();
                 return;

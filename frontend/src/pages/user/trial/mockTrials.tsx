@@ -54,9 +54,9 @@ const MockTrials = () => {
           files: null,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting mock trial:", error);
-      Helpers.showToast("Failed to submit mock trial. Please try again.", "error");
+      Helpers.showToast(error.response.data.message, "error");
     } finally {
       setLoading(false);
     }

@@ -16,7 +16,6 @@ class QuestionController {
             
             const questions = await Question.findAndCountAll({
                 where,
-              
                 include: [
                     {
                         model: Category,
