@@ -14,6 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import userService from "@/services/user.service";
+import { useEffect } from "react";
+import chatService from "@/services/chat.service";
 
 interface AdminHeaderProps {
   variant?: "admin" | "user";
@@ -31,6 +34,17 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
     // Redirect to login page
     navigate("/login");
   };
+
+  const fetchUserCredits = async () => {
+    const credits = await chatService.fetchUserCredits();
+    useUserStore.getState().setUser({ ...user, credits });
+
+
+  };
+
+  useEffect(() => {
+    fetchUserCredits();
+  }, [])
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-40 h-16">
@@ -76,9 +90,9 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
               </span>
 
             </div>
-              <Button 
-                onClick={() => navigate('/user/trial')} 
-                variant="ghost" 
+              <Button
+                onClick={() => navigate('/user/trial')}
+                variant="ghost"
                 className="hidden lg:flex items-center space-x-2 ml-4 hover:bg-primary/50 transition-colors duration-200"
               >
                 <div className="flex items-center space-x-2">
@@ -89,7 +103,7 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
             </>
           )}
 
-     
+
 
           {/* Profile Avatar with Dropdown */}
           <DropdownMenu>

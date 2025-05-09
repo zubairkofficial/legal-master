@@ -9,11 +9,10 @@ router.use(authMiddleware);
 // Payment Methods
 router.post('/', PaymentController.addPaymentMethod);
 router.get('/', PaymentController.getUserPaymentMethods);
-router.delete('/:id', PaymentController.deletePaymentMethod);
-
-// Payment Processing
+router.delete('/:id', PaymentController.deletePaymentMethod);// Payment Processing
 router.post('/process', PaymentController.processPayment);
-router.get('/:paymentId', PaymentController.getPayment);
-router.get('/customer/:customerId', PaymentController.listCustomerPayments);
+// Subscription
+router.get('/user-subscription', PaymentController.getUserActiveSubscription);
+
 
 export default router; 

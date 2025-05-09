@@ -27,6 +27,8 @@ export interface PaymentRequest {
     amount: number;
     currency: string;
     sourceId: string;
+    creditAmount: number;
+    planId: string;
 }
 
 export interface PaymentMethodRequest {
@@ -65,8 +67,8 @@ const subscriptionService = {
         await api.delete(`/subscription/${id}`);
     },
 
-    createSubscription: async (userId: number, planId: string): Promise<Subscription> => {
-        const response = await api.post("/subscription/sub", { userId, planId });
+    createSubscription: async (userId: number, planId: string, creditAmount: number, interval: string, name: string, description: string, features: string[], price: number): Promise<Subscription> => {
+        const response = await api.post("/subscription/sub", { userId, planId, creditAmount, interval, name, description, features, price });
         return response.data.data;
     },
 
@@ -78,6 +80,16 @@ const subscriptionService = {
     getSubscription: async (subscriptionId: string): Promise<Subscription> => {
         const response = await api.get(`/subscription/subscriptions/${subscriptionId}`);
         return response.data.data;
+    },
+
+    getUserActiveSubscription: async (): Promise<Subscription | null> => {
+        const response = await api.get("/payment/user-subscription");
+        return response.data.data;
+    },
+
+    getAllSubscriptions: async (): Promise<Subscription[]> => {
+        const response = await api.get("/subscription/all");
+        return response.data.data || [];
     },
 
     processPayment: async (paymentData: PaymentRequest): Promise<any> => {

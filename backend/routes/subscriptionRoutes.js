@@ -6,11 +6,12 @@ const router = express.Router();
 
 router.use(authMiddleware);
 // Subscription Plans
-router.post('/',  PaymentController.createSubscriptionPlan);
+router.post('/sub',  PaymentController.createSubscriptionPlan);
 router.get('/', PaymentController.getSubscriptionPlans);
-router.get('/:id', PaymentController.getSubscriptionPlan);
+router.get('/all', PaymentController.getAllSubscriptions);
 router.put('/:id', PaymentController.updateSubscriptionPlan);
 router.delete('/:id', PaymentController.deleteSubscriptionPlan);
+
 
 // Payments
 

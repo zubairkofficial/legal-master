@@ -17,7 +17,7 @@ import ProfileSettings from "./pages/profile/ProfileSettings";
 import AdminSettings from "./pages/admin/settings";
 
 import SubscriptionManagement from "./pages/admin/subscription";
-import Products from "./pages/products";
+import Products from "./pages/user/products";
 import MockTrials from "./pages/user/trial/mockTrials";
 import TrialAnalysis from "./pages/user/trial/trialAnalysis";
 import TrialHistory from "./pages/user/trial/trialHistory";

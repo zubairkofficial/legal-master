@@ -1,4 +1,4 @@
-import { SubscriptionPlan, PaymentMethod, User } from '../models/index.js';
+import { SubscriptionPlan, PaymentMethod, User, Subscription } from '../models/index.js';
 import { SquareClient, SquareEnvironment } from "square";
 import 'dotenv/config';
 
@@ -244,7 +244,8 @@ class PaymentController {
     // Process a payment using stored payment method
     static async processPayment(req, res) {
         try {
-            const { amount, currency, sourceId } = req.body;
+            const { amount, currency, sourceId, creditAmount, planId } = req.body;
+            const userId = req.user.id;
             // Create payment using Square API
             const response = await squareClient.payments.create({
                 idempotencyKey: `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
@@ -261,6 +262,64 @@ class PaymentController {
                 const paymentData = JSON.parse(JSON.stringify(response.payment, (key, value) => 
                     typeof value === 'bigint' ? value.toString() : value
                 ));
+                
+                // Update user's credits
+                const user = await User.findByPk(userId);
+                user.credits += parseInt(creditAmount || 0);
+                await user.save();
+
+                // If planId is provided, create a new subscription
+                if (planId) {
+                    // Fetch the subscription plan
+                    const plan = await SubscriptionPlan.findByPk(planId);
+                    
+                    if (!plan) {
+                        throw new Error('Subscription plan not found');
+                    }
+                    
+                    // Calculate expiration date based on plan interval
+                    let expiryDate = new Date();
+                    switch (plan.interval) {
+                        case 'monthly':
+                            expiryDate.setMonth(expiryDate.getMonth() + 1);
+                            break;
+                        case 'quarterly':
+                            expiryDate.setMonth(expiryDate.getMonth() + 3);
+                            break;
+                        case 'yearly':
+                            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                            break;
+                        default:
+                            expiryDate.setMonth(expiryDate.getMonth() + 1); // Default to monthly
+                    }
+                    
+                    // Check if there's an existing active subscription
+                    const existingSubscription = await Subscription.findOne({
+                        where: { 
+                            userId,
+                            status: 'ACTIVE'
+                        }
+                    });
+                    
+                    // If there's an existing subscription, deactivate it
+                    if (existingSubscription) {
+                        await existingSubscription.update({ status: 'INACTIVE' });
+                    }
+                    
+                    // Create a new subscription
+                    const subscription = await Subscription.create({
+                        userId,
+                        planId,
+                        startDate: new Date(),
+                        endDate: expiryDate,
+                        status: 'ACTIVE',
+                        paymentId: paymentData.id,
+                        amount: amount
+                    });
+                    
+                    // Add the subscription to the response
+                    paymentData.subscription = subscription;
+                }
                 
                 res.status(200).json({
                     status: "success",
@@ -283,24 +342,24 @@ class PaymentController {
     }
 
     // Get payment details
-    static async getPayment(req, res) {
-        try {
-            const { paymentId } = req.params;
+    // static async getPayment(req, res) {
+    //     try {
+    //         const { paymentId } = req.params;
 
-            const response = await squareClient.payments.getPayment(paymentId);
+    //         const response = await squareClient.payments.getPayment(paymentId);
 
-            res.status(200).json({
-                success: true,
-                data: response.result.payment
-            });
-        } catch (error) {
-            console.error('Error fetching payment:', error);
-            res.status(500).json({
-                success: false,
-                error: error.message
-            });
-        }
-    }
+    //         res.status(200).json({
+    //             success: true,
+    //             data: response.result.payment
+    //         });
+    //     } catch (error) {
+    //         console.error('Error fetching payment:', error);
+    //         res.status(500).json({
+    //             success: false,
+    //             error: error.message
+    //         });
+    //     }
+    // }
 
     // List all payments for a customer
     static async listCustomerPayments(req, res) {
@@ -320,6 +379,64 @@ class PaymentController {
             });
         } catch (error) {
             console.error('Error listing customer payments:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    // Get active subscription for a user
+    static async getUserActiveSubscription(req, res) {
+        try {
+            const userId = req.user.id || req.params.userId;
+
+            const activeSubscription = await Subscription.findOne({
+                where: { 
+                    userId,
+                    status: 'ACTIVE'
+                },
+                include: [
+                    {
+                        model: SubscriptionPlan,
+                        as: 'plan'
+                    }
+                ]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: activeSubscription
+            });
+        } catch (error) {
+            console.error('Error fetching active subscription:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    // Get all subscriptions
+    static async getAllSubscriptions(req, res) {
+        try {
+            
+            const subscriptions = await Subscription.findAll({
+                include: [
+                    {
+                        model: SubscriptionPlan,
+                        as: 'plan'
+                    }
+                ],
+                order: [['createdAt', 'DESC']]
+            });
+
+            res.status(200).json({
+                success: true,
+                data: subscriptions
+            });
+        } catch (error) {
+            console.error('Error fetching all subscriptions:', error);
             res.status(500).json({
                 success: false,
                 error: error.message

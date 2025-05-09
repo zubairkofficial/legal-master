@@ -25,6 +25,7 @@ const Subscriptions: React.FC = () => {
     const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadSubscriptions();
@@ -32,11 +33,13 @@ const Subscriptions: React.FC = () => {
 
     const loadSubscriptions = async () => {
         try {
-            const response = await fetch('/api/payments/subscriptions');
-            const data = await response.json();
-            setSubscriptions(data.data || []);
+            setLoading(true);
+            const data = await subscriptionService.getAllSubscriptions();
+            setSubscriptions(data || []);
         } catch (error) {
             console.error('Error loading subscriptions:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -74,49 +77,66 @@ const Subscriptions: React.FC = () => {
 
     return (
         <div className="w-full">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>User ID</TableHead>
-                        <TableHead>Plan</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>Next Billing</TableHead>
-                        <TableHead>Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {subscriptions.map((subscription) => (
-                        <TableRow key={subscription.id}>
-                            <TableCell>{subscription.userId}</TableCell>
-                            <TableCell>{subscription.plan?.name}</TableCell>
-                            <TableCell>
-                                <span className={getStatusColor(subscription.status)}>
-                                    {subscription.status}
-                                </span>
-                            </TableCell>
-                            <TableCell>{formatDate(subscription.startDate)}</TableCell>
-                            <TableCell>
-                                {subscription.nextBillingDate
-                                    ? formatDate(subscription.nextBillingDate)
-                                    : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                                {subscription.status === 'ACTIVE' && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleCancelSubscription(subscription)}
-                                        className="text-red-600 hover:text-red-700"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </TableCell>
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold">Subscription Management</h1>
+                <Button onClick={loadSubscriptions} variant="outline">
+                    Refresh
+                </Button>
+            </div>
+            
+            {loading ? (
+                <div className="flex justify-center items-center h-40">
+                    <p>Loading subscriptions...</p>
+                </div>
+            ) : subscriptions.length === 0 ? (
+                <div className="text-center py-10">
+                    <p className="text-gray-500">No subscriptions found</p>
+                </div>
+            ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>User ID</TableHead>
+                            <TableHead>Plan</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Start Date</TableHead>
+                            <TableHead>Next Billing</TableHead>
+                            <TableHead>Actions</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {subscriptions.map((subscription) => (
+                            <TableRow key={subscription.id}>
+                                <TableCell>{subscription.userId}</TableCell>
+                                <TableCell>{subscription.plan?.name}</TableCell>
+                                <TableCell>
+                                    <span className={getStatusColor(subscription.status)}>
+                                        {subscription.status}
+                                    </span>
+                                </TableCell>
+                                <TableCell>{formatDate(subscription.startDate)}</TableCell>
+                                <TableCell>
+                                    {subscription.nextBillingDate
+                                        ? formatDate(subscription.nextBillingDate)
+                                        : 'N/A'}
+                                </TableCell>
+                                <TableCell>
+                                    {subscription.status === 'ACTIVE' && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleCancelSubscription(subscription)}
+                                            className="text-red-600 hover:text-red-700"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            )}
 
             <AlertDialog open={openDialog} onOpenChange={setOpenDialog}>
                 <AlertDialogContent>

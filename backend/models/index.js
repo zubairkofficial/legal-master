@@ -82,6 +82,18 @@ Message.belongsTo(User, {
     as: 'sender',
 });
 
+// Subscription associations
+Subscription.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user',
+});
+Subscription.belongsTo(SubscriptionPlan, {
+    foreignKey: 'planId',
+    as: 'plan',
+});
+
+
+
 // Export models and sequelize instance
-export { sequelize, User, Category, Question, Chat, Message, Settings, SubscriptionPlan, Subscription, PaymentMethod,MockTrial };
+export { sequelize, User, Category, Question, Chat, Message, Settings, SubscriptionPlan, Subscription, PaymentMethod, MockTrial };
 export default sequelize;
