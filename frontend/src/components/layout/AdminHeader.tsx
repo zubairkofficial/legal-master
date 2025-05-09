@@ -14,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import userService from "@/services/user.service";
 import { useEffect } from "react";
 import chatService from "@/services/chat.service";
 
@@ -37,9 +36,9 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
 
   const fetchUserCredits = async () => {
     const credits = await chatService.fetchUserCredits();
-    useUserStore.getState().setUser({ ...user, credits });
-
-
+    if (user) {
+      useUserStore.getState().setUser({ ...user, credits });
+    }
   };
 
   useEffect(() => {

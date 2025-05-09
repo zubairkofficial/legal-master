@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 // Subscription Plans
-router.post('/sub',  PaymentController.createSubscriptionPlan);
+router.post('/',  PaymentController.createSubscriptionPlan);
 router.get('/', PaymentController.getSubscriptionPlans);
 router.get('/all', PaymentController.getAllSubscriptions);
 router.put('/:id', PaymentController.updateSubscriptionPlan);
