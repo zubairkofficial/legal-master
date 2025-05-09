@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, MessagesSquare } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import chatService, { Chat, ChatMessage } from "@/services/chat.service";
-import userService from "@/services/user.service";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import { Pagination, PaginationInfo } from "@/components/ui/pagination";
 
 export function ChatTable() {
   const [users, setUsers] = useState<User[]>([]);
@@ -20,32 +20,51 @@ export function ChatTable() {
   const [isMessagesModalOpen, setIsMessagesModalOpen] = useState(false);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedChatTitle, setSelectedChatTitle] = useState("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const users = await userService.getAllUsers();
-      setUsers(users);
+      const response = await chatService.getUserChats();
+      const allChats = response.data;
       
-      // Get chats for each user
-      const userChatsMap: Record<string, Chat[]> = {};
-      
-      for (const user of users) {
-        try {
-          const response = await chatService.getUserChats();
-          // Filter chats for this user if the API doesn't already do it
-          const chats = response.data.filter(chat => chat.userId === user.id);
-          userChatsMap[user.id] = chats;
-        } catch (err) {
-          console.error(`Error fetching chats for user ${user.id}:`, err);
+      // Extract unique users from chats
+      const uniqueUsers = new Map<string, User>();
+      allChats.forEach(chat => {
+        if (chat.userId && !uniqueUsers.has(chat.userId)) {
+          // The backend includes the user in each chat as part of the 'user' association
+          const user = chat.user as User;
+          
+          uniqueUsers.set(chat.userId, {
+            id: chat.userId,
+            name: user.name || 'Unknown User',
+            email: user.email || 'No email provided',
+            username: user.username || '',
+            role: user.role || 'user',
+            isActive: user.isActive !== undefined ? user.isActive : true,
+            profileImage: user.profileImage || '',
+          });
         }
-      }
+      });
+      
+      const usersList = Array.from(uniqueUsers.values());
+      setUsers(usersList);
+      
+      // Group chats by user ID
+      const userChatsMap: Record<string, Chat[]> = {};
+      usersList.forEach(user => {
+        userChatsMap[user.id] = allChats.filter(chat => chat.userId === user.id);
+      });
       
       setUserChats(userChatsMap);
       setError(null);
     } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Failed to fetch users. Please try again.");
+      console.error("Error fetching chats:", err);
+      setError("Failed to fetch chat data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,7 +72,20 @@ export function ChatTable() {
 
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+  }, []);
+  
+  // Filter and paginate users
+  useEffect(() => {
+    const filtered = users.filter(user => userChats[user.id]?.length > 0);
+    setFilteredUsers(filtered);
+  }, [users, userChats]);
+  
+  // Get paginated data
+  const paginatedUsers = useCallback(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredUsers.slice(start, end);
+  }, [filteredUsers, currentPage, pageSize]);
 
   const handleViewChatHistory = async (user: User, chatId: string) => {
     try {
@@ -89,6 +121,10 @@ export function ChatTable() {
       minute: 'numeric',
     });
   };
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <div className="space-y-4">
@@ -105,117 +141,133 @@ export function ChatTable() {
       {loading ? (
         <div className="text-center py-8">Loading users and chats...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-muted">
-              <tr>
-                <th className="text-left p-3 border-b">User</th>
-                <th className="text-left p-3 border-b">Email</th>
-                <th className="text-center p-3 border-b">Total Chats</th>
-                <th className="text-center p-3 border-b">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead className="bg-muted">
                 <tr>
-                  <td colSpan={4} className="text-center py-8">
-                    No users found
-                  </td>
+                  <th className="text-left p-3 border-b">User</th>
+                  <th className="text-left p-3 border-b">Email</th>
+                  <th className="text-center p-3 border-b">Total Chats</th>
+                  <th className="text-center p-3 border-b">Actions</th>
                 </tr>
-              ) : (
-                users
-                  .filter(user => userChats[user.id]?.length > 0)
-                  .map((user) => (
-                  <tr key={user.id} className="hover:bg-muted/50">
-                    <td className="p-3 border-b">
-                      <div className="flex items-center gap-3">
-                        {user.profileImage ? (
-                          <img 
-                            src={user.profileImage} 
-                            alt={user.name} 
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        {user.name}
-                      </div>
-                    </td>
-                    <td className="p-3 border-b">{user.email}</td>
-                    <td className="p-3 border-b text-center">
-                      {userChats[user.id]?.length || 0}
-                    </td>
-                    <td className="p-3 border-b flex justify-center">
-                      <Sheet open={isChatDetailsOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsChatDetailsOpen(false)}>
-                        <SheetTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleViewUserChats(user)}
-                            className="flex items-center gap-2"
-                          >
-                            <MessagesSquare className="h-4 w-4" />
-                            View Chats
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-semibold flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                {user.name.charAt(0).toUpperCase()}
-                              </div>
-                              {user.name}'s Chat History
-                            </h3>
-                            
-                            {!userChats[user.id] || userChats[user.id].length === 0 ? (
-                              <div className="text-center py-8">
-                                No chat history found for this user
-                              </div>
-                            ) : (
-                              <Accordion type="single" collapsible>
-                                {userChats[user.id].map((chat) => (
-                                  <AccordionItem value={chat.id} key={chat.id}>
-                                    <AccordionTrigger className="px-4 py-2 hover:bg-muted/50 rounded-md">
-                                      <div className="flex justify-between items-center w-full">
-                                        <div className="flex items-center gap-2">
-                                          <MessageCircle className="h-4 w-4" />
-                                          <span>Chat #{chat.id}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                          <span>Status: {chat.status}</span>
-                                          <span>Created: {formatDate(chat.createdAt)}</span>
-                                        </div>
-                                      </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                      <div className="p-4 space-y-4">
-                                        <div className="flex justify-between items-center">
-                                          <h4 className="font-medium">Messages</h4>
-                                          <Button 
-                                            variant="outline" 
-                                            size="sm" 
-                                            onClick={() => handleViewChatHistory(user, chat.id)}
-                                          >
-                                            Load Messages
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                              </Accordion>
-                            )}
-                          </div>
-                        </SheetContent>
-                      </Sheet>
+              </thead>
+              <tbody>
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8">
+                      No users found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  paginatedUsers().map((user) => (
+                    <tr key={user.id} className="hover:bg-muted/50">
+                      <td className="p-3 border-b">
+                        <div className="flex items-center gap-3">
+                          {user.profileImage ? (
+                            <img 
+                              src={user.profileImage} 
+                              alt={user.name} 
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {user.name}
+                        </div>
+                      </td>
+                      <td className="p-3 border-b">{user.email}</td>
+                      <td className="p-3 border-b text-center">
+                        {userChats[user.id]?.length || 0}
+                      </td>
+                      <td className="p-3 border-b flex justify-center">
+                        <Sheet open={isChatDetailsOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsChatDetailsOpen(false)}>
+                          <SheetTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleViewUserChats(user)}
+                              className="flex items-center gap-2"
+                            >
+                              <MessagesSquare className="h-4 w-4" />
+                              View Chats
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent>
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                  {user.name.charAt(0).toUpperCase()}
+                                </div>
+                                {user.name}'s Chat History
+                              </h3>
+                              
+                              {!userChats[user.id] || userChats[user.id].length === 0 ? (
+                                <div className="text-center py-8">
+                                  No chat history found for this user
+                                </div>
+                              ) : (
+                                <Accordion type="single" collapsible>
+                                  {userChats[user.id].map((chat) => (
+                                    <AccordionItem value={chat.id} key={chat.id}>
+                                      <AccordionTrigger className="px-4 py-2 hover:bg-muted/50 rounded-md">
+                                        <div className="flex justify-between items-center w-full">
+                                          <div className="flex items-center gap-2">
+                                            <MessageCircle className="h-4 w-4" />
+                                            <span>Chat #{chat.id}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <span>Status: {chat.status}</span>
+                                            <span>Created: {formatDate(chat.createdAt)}</span>
+                                          </div>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        <div className="p-4 space-y-4">
+                                          <div className="flex justify-between items-center">
+                                            <h4 className="font-medium">Messages</h4>
+                                            <Button 
+                                              variant="outline" 
+                                              size="sm" 
+                                              onClick={() => handleViewChatHistory(user, chat.id)}
+                                            >
+                                              Load Messages
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                                </Accordion>
+                              )}
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {filteredUsers.length > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center">
+              <PaginationInfo 
+                totalItems={filteredUsers.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+              />
+              <Pagination
+                totalItems={filteredUsers.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
         </div>
       )}
 

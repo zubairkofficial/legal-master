@@ -15,6 +15,15 @@ export interface Chat {
   status: ChatStatus;
   createdAt: string;
   updatedAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    username?: string;
+    role?: string;
+    isActive?: boolean;
+    profileImage?: string;
+  };
   data?: {
     id: string;
     [key: string]: any;
@@ -70,8 +79,14 @@ export const fetchUserCredits = async () => {
 
 // Chat Service
 const chatService = {
+
   getUserChats: async (): Promise<ChatResponse> => {
     const response = await api.get("/chats");
+    return response.data;
+  },
+  
+  getChatHistory: async (): Promise<ChatResponse> => {
+    const response = await api.get("/chats/history");
     return response.data;
   },
 

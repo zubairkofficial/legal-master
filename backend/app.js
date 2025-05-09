@@ -19,7 +19,9 @@ app.use(cors());
 
 // Define routes for user and authentication management
 app.use('/uploads', express.static('uploads'));
+
 const v1Router = express.Router();
+
 v1Router.use('/auth', authRoutes); 
 v1Router.use('/questions', questionRoutes);
 v1Router.use('/categories', categoryRoutes);
@@ -29,8 +31,10 @@ v1Router.use('/chats', chatRoutes);
 v1Router.use('/settings', settingsRoutes);
 v1Router.use('/subscription', subscriptionRoutes);
 v1Router.use('/payment', paymentRoutes);
-v1Router.use('/credits', creditRoutes); // Assuming this is for user credits
-v1Router.use('/trials', trialRoutes)
+v1Router.use('/credits', creditRoutes); 
+v1Router.use('/trials', trialRoutes);
+
+
 app.use('/api/v1', v1Router);
 
 app.get('/api/v1/', (req, res) => {

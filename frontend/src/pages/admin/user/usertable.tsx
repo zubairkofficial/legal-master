@@ -1,4 +1,4 @@
-import  { useEffect, useState } from "react";
+import  { useEffect, useState, useCallback } from "react";
 import { User } from "../../../types/types";
 import { Button } from "../../../components/ui/button";
 import { Edit, Plus, Trash2 } from "lucide-react";
@@ -7,6 +7,7 @@ import { AddUserForm } from "./adduser";
 import { EditUserForm } from "./edituser";
 import { DeleteUserConfirm } from "./deleteuser";
 import userService from "../../../services/user.service";
+import { Pagination, PaginationInfo } from "@/components/ui/pagination";
 
 export interface ExtendedUser extends User {
   username: string;
@@ -23,6 +24,10 @@ export function UserTable() {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -41,6 +46,17 @@ export function UserTable() {
   useEffect(() => {
     fetchUsers();
   }, []);
+  
+  // Get paginated data
+  const paginatedUsers = useCallback(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return users.slice(start, end);
+  }, [users, currentPage, pageSize]);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleAddUser = () => {
     setIsAddUserOpen(true);
@@ -97,112 +113,130 @@ export function UserTable() {
       {loading ? (
         <div className="text-center py-8">Loading users...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-muted">
-              <tr>
-                <th className="text-left p-3 border-b">Name</th>
-                <th className="text-left p-3 border-b">Username</th>
-                <th className="text-left p-3 border-b">Email</th>
-                <th className="text-left p-3 border-b">Role</th>
-                <th className="text-left p-3 border-b">Status</th>
-                <th className="text-center p-3 border-b">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead className="bg-muted">
                 <tr>
-                  <td colSpan={6} className="text-center py-8">
-                    No users found
-                  </td>
+                  <th className="text-left p-3 border-b">Name</th>
+                  <th className="text-left p-3 border-b">Username</th>
+                  <th className="text-left p-3 border-b">Email</th>
+                  <th className="text-left p-3 border-b">Role</th>
+                  <th className="text-left p-3 border-b">Status</th>
+                  <th className="text-center p-3 border-b">Actions</th>
                 </tr>
-              ) : (
-                users.map((user) => (
-                  <tr key={user.id} className="hover:bg-muted/50">
-                    <td className="p-3 border-b">
-                      <div className="flex items-center gap-3">
-                        {user.profileImage ? (
-                          <img 
-                            src={user.profileImage} 
-                            alt={user.name} 
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        {user.name}
-                      </div>
-                    </td>
-                    <td className="p-3 border-b">{user.username}</td>
-                    <td className="p-3 border-b">{user.email}</td>
-                    <td className="p-3 border-b">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        user.role === 'admin' 
-                          ? 'bg-blue-50 text-blue-800' 
-                          : 'bg-gray-50 text-gray-800'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="p-3 border-b">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        user.isActive 
-                          ? 'bg-green-50 text-green-800' 
-                          : 'bg-red-50 text-red-800'
-                      }`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="p-3 border-b flex justify-center gap-2">
-                      <Sheet open={isEditUserOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsEditUserOpen(false)}>
-                        <SheetTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEditUser(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                          {selectedUser && (
-                            <EditUserForm 
-                              user={selectedUser} 
-                              onSuccess={onUserEdited} 
-                              onCancel={() => setIsEditUserOpen(false)} 
-                            />
-                          )}
-                        </SheetContent>
-                      </Sheet>
-                      
-                      <Sheet open={isDeleteUserOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsDeleteUserOpen(false)}>
-                        <SheetTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteUser(user)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                          {selectedUser && (
-                            <DeleteUserConfirm 
-                              user={selectedUser} 
-                              onSuccess={onUserDeleted} 
-                              onCancel={() => setIsDeleteUserOpen(false)} 
-                            />
-                          )}
-                        </SheetContent>
-                      </Sheet>
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8">
+                      No users found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  paginatedUsers().map((user) => (
+                    <tr key={user.id} className="hover:bg-muted/50">
+                      <td className="p-3 border-b">
+                        <div className="flex items-center gap-3">
+                          {user.profileImage ? (
+                            <img 
+                              src={user.profileImage} 
+                              alt={user.name} 
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {user.name}
+                        </div>
+                      </td>
+                      <td className="p-3 border-b">{user.username}</td>
+                      <td className="p-3 border-b">{user.email}</td>
+                      <td className="p-3 border-b">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          user.role === 'admin' 
+                            ? 'bg-blue-50 text-blue-800' 
+                            : 'bg-gray-50 text-gray-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="p-3 border-b">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          user.isActive 
+                            ? 'bg-green-50 text-green-800' 
+                            : 'bg-red-50 text-red-800'
+                        }`}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-3 border-b flex justify-center gap-2">
+                        <Sheet open={isEditUserOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsEditUserOpen(false)}>
+                          <SheetTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent>
+                            {selectedUser && (
+                              <EditUserForm 
+                                user={selectedUser} 
+                                onSuccess={onUserEdited} 
+                                onCancel={() => setIsEditUserOpen(false)} 
+                              />
+                            )}
+                          </SheetContent>
+                        </Sheet>
+                        
+                        <Sheet open={isDeleteUserOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsDeleteUserOpen(false)}>
+                          <SheetTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteUser(user)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent>
+                            {selectedUser && (
+                              <DeleteUserConfirm 
+                                user={selectedUser} 
+                                onSuccess={onUserDeleted} 
+                                onCancel={() => setIsDeleteUserOpen(false)} 
+                              />
+                            )}
+                          </SheetContent>
+                        </Sheet>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {users.length > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center">
+              <PaginationInfo 
+                totalItems={users.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+              />
+              <Pagination
+                totalItems={users.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

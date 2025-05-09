@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { User } from "@/types/types";
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import trialService from "@/services/trial.service";
 import userService from "@/services/user.service";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { Pagination, PaginationInfo } from "@/components/ui/pagination";
 
 interface Trial {
   id: string;
@@ -34,6 +34,11 @@ export function TrialsTable() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [selectedTrial, setSelectedTrial] = useState<Trial | null>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
   const fetchUsersAndTrials = async () => {
     setLoading(true);
@@ -71,6 +76,23 @@ export function TrialsTable() {
     fetchUsersAndTrials();
   }, []);
 
+  // Filter and paginate users
+  useEffect(() => {
+    const filtered = users.filter(user => userTrials[user.id]?.length > 0);
+    setFilteredUsers(filtered);
+  }, [users, userTrials]);
+  
+  // Get paginated data
+  const paginatedUsers = useCallback(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredUsers.slice(start, end);
+  }, [filteredUsers, currentPage, pageSize]);
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   const handleViewUserTrials = (user: User) => {
     setSelectedUser(user);
     setIsTrialDetailsOpen(true);
@@ -106,134 +128,150 @@ export function TrialsTable() {
       {loading ? (
         <div className="text-center py-8">Loading users and trials...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-muted">
-              <tr>
-                <th className="text-left p-3 border-b">User</th>
-                <th className="text-left p-3 border-b">Email</th>
-                <th className="text-center p-3 border-b">Total Trials</th>
-                <th className="text-center p-3 border-b">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
+        <div className="space-y-4">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead className="bg-muted">
                 <tr>
-                  <td colSpan={4} className="text-center py-8">
-                    No users found
-                  </td>
+                  <th className="text-left p-3 border-b">User</th>
+                  <th className="text-left p-3 border-b">Email</th>
+                  <th className="text-center p-3 border-b">Total Trials</th>
+                  <th className="text-center p-3 border-b">Actions</th>
                 </tr>
-              ) : (
-                users
-                  .filter(user => userTrials[user.id]?.length > 0)
-                  .map((user) => (
-                  <tr key={user.id} className="hover:bg-muted/50">
-                    <td className="p-3 border-b">
-                      <div className="flex items-center gap-3">
-                        {user.profileImage ? (
-                          <img 
-                            src={user.profileImage} 
-                            alt={user.name} 
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        {user.name}
-                      </div>
-                    </td>
-                    <td className="p-3 border-b">{user.email}</td>
-                    <td className="p-3 border-b text-center">
-                      {userTrials[user.id]?.length || 0}
-                    </td>
-                    <td className="p-3 border-b flex justify-center">
-                      <Sheet open={isTrialDetailsOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsTrialDetailsOpen(false)}>
-                        <SheetTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleViewUserTrials(user)}
-                            className="flex items-center gap-2"
-                          >
-                            <FileText className="h-4 w-4" />
-                            View Trials
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-semibold flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                                {user.name.charAt(0).toUpperCase()}
-                              </div>
-                              {user.name}'s Mock Trials
-                            </h3>
-                            
-                            {!userTrials[user.id] || userTrials[user.id].length === 0 ? (
-                              <div className="text-center py-8">
-                                No mock trials found for this user
-                              </div>
-                            ) : (
-                              <Accordion type="single" collapsible>
-                                {userTrials[user.id].map((trial) => (
-                                  <AccordionItem value={trial.id} key={trial.id}>
-                                    <AccordionTrigger className="px-4 py-2 hover:bg-muted/50 rounded-md">
-                                      <div className="flex justify-between items-center w-full">
-                                        <div className="flex items-center gap-2">
-                                          <FileText className="h-4 w-4" />
-                                          <span className="truncate max-w-[200px]">{trial.caseData.caseDescription}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                          <span>Role: {trial.caseData.role}</span>
-                                          <span>Created: {formatDate(trial.createdAt)}</span>
-                                        </div>
-                                      </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                      <div className="p-4 space-y-4">
-                                        <div className="grid grid-cols-2 gap-2 text-sm">
-                                          <div>
-                                            <span className="font-medium">Country: </span>
-                                            {trial.caseData.country}
-                                          </div>
-                                          <div>
-                                            <span className="font-medium">State: </span>
-                                            {trial.caseData.state}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                          <h4 className="font-medium">Summary</h4>
-                                          <p className="text-sm max-h-24 overflow-y-auto p-2 bg-muted/50 rounded">
-                                            {trial.summary?.substring(0, 200)}...
-                                          </p>
-                                        </div>
-                                        
-                                        <div className="flex justify-end">
-                                          <Button 
-                                            variant="default" 
-                                            size="sm" 
-                                            onClick={() => handleViewAnalysis(trial)}
-                                          >
-                                            View Complete Analysis
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                ))}
-                              </Accordion>
-                            )}
-                          </div>
-                        </SheetContent>
-                      </Sheet>
+              </thead>
+              <tbody>
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8">
+                      No users found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  paginatedUsers().map((user) => (
+                    <tr key={user.id} className="hover:bg-muted/50">
+                      <td className="p-3 border-b">
+                        <div className="flex items-center gap-3">
+                          {user.profileImage ? (
+                            <img 
+                              src={user.profileImage} 
+                              alt={user.name} 
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {user.name}
+                        </div>
+                      </td>
+                      <td className="p-3 border-b">{user.email}</td>
+                      <td className="p-3 border-b text-center">
+                        {userTrials[user.id]?.length || 0}
+                      </td>
+                      <td className="p-3 border-b flex justify-center">
+                        <Sheet open={isTrialDetailsOpen && selectedUser?.id === user.id} onOpenChange={(open) => !open && setIsTrialDetailsOpen(false)}>
+                          <SheetTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleViewUserTrials(user)}
+                              className="flex items-center gap-2"
+                            >
+                              <FileText className="h-4 w-4" />
+                              View Trials
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent>
+                            <div className="space-y-4">
+                              <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                                  {user.name.charAt(0).toUpperCase()}
+                                </div>
+                                {user.name}'s Mock Trials
+                              </h3>
+                              
+                              {!userTrials[user.id] || userTrials[user.id].length === 0 ? (
+                                <div className="text-center py-8">
+                                  No mock trials found for this user
+                                </div>
+                              ) : (
+                                <Accordion type="single" collapsible>
+                                  {userTrials[user.id].map((trial) => (
+                                    <AccordionItem value={trial.id} key={trial.id}>
+                                      <AccordionTrigger className="px-4 py-2 hover:bg-muted/50 rounded-md">
+                                        <div className="flex justify-between items-center w-full">
+                                          <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            <span className="truncate max-w-[200px]">{trial.caseData.caseDescription}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <span>Role: {trial.caseData.role}</span>
+                                            <span>Created: {formatDate(trial.createdAt)}</span>
+                                          </div>
+                                        </div>
+                                      </AccordionTrigger>
+                                      <AccordionContent>
+                                        <div className="p-4 space-y-4">
+                                          <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div>
+                                              <span className="font-medium">Country: </span>
+                                              {trial.caseData.country}
+                                            </div>
+                                            <div>
+                                              <span className="font-medium">State: </span>
+                                              {trial.caseData.state}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="space-y-2">
+                                            <h4 className="font-medium">Summary</h4>
+                                            <p className="text-sm max-h-24 overflow-y-auto p-2 bg-muted/50 rounded">
+                                              {trial.summary?.substring(0, 200)}...
+                                            </p>
+                                          </div>
+                                          
+                                          <div className="flex justify-end">
+                                            <Button 
+                                              variant="default" 
+                                              size="sm" 
+                                              onClick={() => handleViewAnalysis(trial)}
+                                            >
+                                              View Complete Analysis
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </AccordionContent>
+                                    </AccordionItem>
+                                  ))}
+                                </Accordion>
+                              )}
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {filteredUsers.length > 0 && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center">
+              <PaginationInfo 
+                totalItems={filteredUsers.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+              />
+              <Pagination
+                totalItems={filteredUsers.length}
+                pageSize={pageSize}
+                currentPage={currentPage}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
         </div>
       )}
 
