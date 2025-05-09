@@ -18,9 +18,15 @@ interface SquarePaymentFormProps {
   amount: number;
   onPaymentSuccess: (paymentResult: any) => void;
   onPaymentError: (error: any) => void;
+  disabled?: boolean;
 }
 
-export default function SquarePaymentForm({ amount, onPaymentSuccess, onPaymentError }: SquarePaymentFormProps) {
+export default function SquarePaymentForm({ 
+  amount, 
+  onPaymentSuccess, 
+  onPaymentError,
+  disabled = false 
+}: SquarePaymentFormProps) {
   const [card, setCard] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -134,12 +140,12 @@ export default function SquarePaymentForm({ amount, onPaymentSuccess, onPaymentE
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Card Information</Label>
-            <div id="card-container" className="border p-3 rounded-md min-h-[40px]"></div>
+            <div id="card-container" className={`border p-3 rounded-md min-h-[40px] ${disabled ? 'opacity-70 pointer-events-none' : ''}`}></div>
           </div>
 
           <Button 
             onClick={handlePaymentSubmit} 
-            disabled={loading} 
+            disabled={loading || disabled} 
             className="w-full"
           >
             {loading ? 'Processing...' : `Pay $${(amount / 100).toFixed(2)}`}

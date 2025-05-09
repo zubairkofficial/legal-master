@@ -443,6 +443,55 @@ class PaymentController {
             });
         }
     }
+
+    // Cancel a subscription
+    static async cancelSubscription(req, res) {
+        try {
+            const { id } = req.params;
+            const userId = req.user.id;
+
+            // Find the subscription
+            const subscription = await Subscription.findOne({
+                where: { 
+                    id,
+                    userId // Ensure the subscription belongs to the authenticated user
+                }
+            });
+
+            if (!subscription) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Subscription not found or does not belong to the user'
+                });
+            }
+
+            // Check if it's already cancelled
+            if (subscription.status === 'CANCELLED') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Subscription is already cancelled'
+                });
+            }
+
+            // Update the subscription status to CANCELLED
+            await subscription.update({ 
+                status: 'CANCELLED',
+                endDate: new Date() // Set the end date to today
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Subscription cancelled successfully',
+                data: subscription
+            });
+        } catch (error) {
+            console.error('Error cancelling subscription:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
 }
 
 export default PaymentController;

@@ -1,7 +1,7 @@
 import  { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import subscriptionService, { SubscriptionPlan, Subscription } from '@/services/subscription.service';
 import PaymentMethodModal from '@/components/payment/PaymentMethodModal';
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +13,7 @@ export default function Products() {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null);
+  const [processingPayment, setProcessingPayment] = useState(false);
   const { toast } = useToast();
   const { user } = useUserStore();
 
@@ -53,6 +54,7 @@ export default function Products() {
     if (!selectedPlan || !user?.id) return;
 
     try {
+      setProcessingPayment(true);
       // Process the payment using the selected payment method
       await subscriptionService.processPayment({
         amount: Number(selectedPlan.price),
@@ -81,6 +83,8 @@ export default function Products() {
         description: "Failed to process subscription. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
@@ -89,6 +93,7 @@ export default function Products() {
     if (!activeSubscription) return;
     
     try {
+      setProcessingPayment(true);
       await subscriptionService.cancelSubscription(activeSubscription.id);
       toast({
         title: "Success",
@@ -105,6 +110,8 @@ export default function Products() {
         description: "Failed to cancel subscription. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
@@ -165,8 +172,16 @@ export default function Products() {
                 variant="destructive" 
                 onClick={handleCancelSubscription}
                 className="w-full"
+                disabled={processingPayment}
               >
-                Cancel Subscription
+                {processingPayment ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Cancel Subscription"
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -205,9 +220,16 @@ export default function Products() {
                   <Button
                     className="w-full bg-[#BB8A28] hover:bg-[#A07923]"
                     onClick={() => handleGetStarted(plan)}
-                    disabled={activeSubscription.planId === plan.id}
+                    disabled={activeSubscription.planId === plan.id || processingPayment}
                   >
-                    {activeSubscription.planId === plan.id ? 'Current Plan' : 'Switch to this Plan'}
+                    {processingPayment && selectedPlan?.id === plan.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      activeSubscription.planId === plan.id ? 'Current Plan' : 'Switch to this Plan'
+                    )}
                   </Button>
                 </CardFooter>
               </Card>
@@ -255,8 +277,16 @@ export default function Products() {
                 <Button
                   className="w-full bg-[#BB8A28] hover:bg-[#A07923]"
                   onClick={() => handleGetStarted(plan)}
+                  disabled={processingPayment}
                 >
-                  Get Started
+                  {processingPayment && selectedPlan?.id === plan.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Get Started"
+                  )}
                 </Button>
               </CardFooter>
             </Card>
@@ -268,13 +298,16 @@ export default function Products() {
         <PaymentMethodModal
           isOpen={showPaymentModal}
           onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedPlan(null);
+            if (!processingPayment) {
+              setShowPaymentModal(false);
+              setSelectedPlan(null);
+            }
           }}
           onPaymentMethodSelect={handlePaymentMethodSelect}
           onDirectPayment={() => {}}
           planId={selectedPlan.id}
           amount={selectedPlan.price}
+          processingPayment={processingPayment}
         />
       )}
     </section>

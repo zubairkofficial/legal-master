@@ -1,4 +1,3 @@
-
 //@ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -11,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from '@/services/api';
 import useUserStore from '@/store/useUserStore';
 import SquarePaymentForm from './SquarePaymentForm';
+import CardIcon from './CardIcon';
 
 interface PaymentMethod {
   id: string;
@@ -27,6 +27,7 @@ interface PaymentMethodModalProps {
   onDirectPayment: (paymentResult: any) => void;
   amount: number;
   planId: string;
+  processingPayment?: boolean;
 }
 
 export default function PaymentMethodModal({ 
@@ -35,7 +36,8 @@ export default function PaymentMethodModal({
   onPaymentMethodSelect, 
   onDirectPayment,
   planId,
-  amount 
+  amount,
+  processingPayment = false
 }: PaymentMethodModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [showAddNew, setShowAddNew] = useState(false);
@@ -107,7 +109,7 @@ export default function PaymentMethodModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={processingPayment ? undefined : onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Make Payment</DialogTitle>
@@ -115,8 +117,8 @@ export default function PaymentMethodModal({
 
         <Tabs defaultValue="direct-payment" className="w-full" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="direct-payment">Pay with Card</TabsTrigger>
-            <TabsTrigger value="saved-cards">Saved Cards</TabsTrigger>
+            <TabsTrigger value="direct-payment" disabled={processingPayment}>Pay with Card</TabsTrigger>
+            <TabsTrigger value="saved-cards" disabled={processingPayment}>Saved Cards</TabsTrigger>
           </TabsList>
           
           <TabsContent value="direct-payment" className="space-y-4">
@@ -124,6 +126,7 @@ export default function PaymentMethodModal({
               amount={amount} 
               onPaymentSuccess={handlePaymentSuccess}
               onPaymentError={handlePaymentError}
+              disabled={processingPayment}
             />
           </TabsContent>
           
@@ -134,11 +137,11 @@ export default function PaymentMethodModal({
                   paymentMethods.map((method) => (
                     <Card
                       key={method.id}
-                      className="cursor-pointer hover:border-primary"
-                      onClick={() => onPaymentMethodSelect(method.id)}
+                      className={`cursor-pointer hover:border-primary ${processingPayment ? 'opacity-70 pointer-events-none' : ''}`}
+                      onClick={() => !processingPayment && onPaymentMethodSelect(method.id)}
                     >
                       <CardContent className="p-4 flex items-center space-x-4">
-                        <CreditCard className="h-6 w-6" />
+                        <CardIcon cardType={method.cardType} />
                         <div>
                           <p className="font-medium">{method.cardType} ending in {method.lastFourDigits}</p>
                           <p className="text-sm text-muted-foreground">{method.cardholderName}</p>
@@ -153,6 +156,7 @@ export default function PaymentMethodModal({
                   variant="outline"
                   className="w-full"
                   onClick={() => setShowAddNew(true)}
+                  disabled={processingPayment}
                 >
                   Add New Payment Method
                 </Button>
@@ -229,10 +233,11 @@ export default function PaymentMethodModal({
                     type="button"
                     variant="outline"
                     onClick={() => setShowAddNew(false)}
+                    disabled={loading || processingPayment}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={loading}>
+                  <Button type="submit" disabled={loading || processingPayment}>
                     {loading ? 'Adding...' : 'Add Payment Method'}
                   </Button>
                 </DialogFooter>

@@ -12,7 +12,7 @@ router.get('/all', PaymentController.getAllSubscriptions);
 router.put('/:id', PaymentController.updateSubscriptionPlan);
 router.delete('/:id', PaymentController.deleteSubscriptionPlan);
 
-
-// Payments
+// Subscription Management
+router.delete('/unsub/:id', PaymentController.cancelSubscription);
 
 export default router; 
