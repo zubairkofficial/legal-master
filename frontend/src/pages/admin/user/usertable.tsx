@@ -1,13 +1,14 @@
 import  { useEffect, useState, useCallback } from "react";
 import { User } from "../../../types/types";
 import { Button } from "../../../components/ui/button";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, Plus, Trash2, Search } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "../../../components/ui/sheet";
 import { AddUserForm } from "./adduser";
 import { EditUserForm } from "./edituser";
 import { DeleteUserConfirm } from "./deleteuser";
 import userService from "../../../services/user.service";
 import { Pagination, PaginationInfo } from "@/components/ui/pagination";
+import { Input } from "@/components/ui/input";
 
 export interface ExtendedUser extends User {
   username: string;
@@ -24,6 +25,8 @@ export function UserTable() {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [isDeleteUserOpen, setIsDeleteUserOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState<ExtendedUser[]>([]);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,6 +37,7 @@ export function UserTable() {
     try {
       const users = await userService.getAllUsers();
       setUsers(users);
+      setFilteredUsers(users);
       setError(null);
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -47,12 +51,29 @@ export function UserTable() {
     fetchUsers();
   }, []);
   
+  // Filter users based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredUsers(users);
+    } else {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      const filtered = users.filter(user => 
+        user.name.toLowerCase().includes(lowercasedQuery) ||
+        user.username.toLowerCase().includes(lowercasedQuery) ||
+        user.email.toLowerCase().includes(lowercasedQuery) ||
+        user.role.toLowerCase().includes(lowercasedQuery)
+      );
+      setFilteredUsers(filtered);
+    }
+    setCurrentPage(1); // Reset to first page when search changes
+  }, [searchQuery, users]);
+  
   // Get paginated data
   const paginatedUsers = useCallback(() => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    return users.slice(start, end);
-  }, [users, currentPage, pageSize]);
+    return filteredUsers.slice(start, end);
+  }, [filteredUsers, currentPage, pageSize]);
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -110,6 +131,18 @@ export function UserTable() {
         </div>
       )}
 
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+          <Search className="h-4 w-4 text-gray-500" />
+        </div>
+        <Input
+          className="pl-10 w-full md:w-64"
+          placeholder="Search users..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       {loading ? (
         <div className="text-center py-8">Loading users...</div>
       ) : (
@@ -127,7 +160,7 @@ export function UserTable() {
                 </tr>
               </thead>
               <tbody>
-                {users.length === 0 ? (
+                {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-8">
                       No users found
@@ -222,15 +255,15 @@ export function UserTable() {
             </table>
           </div>
           
-          {users.length > 0 && (
+          {filteredUsers.length > 0 && (
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center">
               <PaginationInfo 
-                totalItems={users.length}
+                totalItems={filteredUsers.length}
                 pageSize={pageSize}
                 currentPage={currentPage}
               />
               <Pagination
-                totalItems={users.length}
+                totalItems={filteredUsers.length}
                 pageSize={pageSize}
                 currentPage={currentPage}
                 onPageChange={handlePageChange}

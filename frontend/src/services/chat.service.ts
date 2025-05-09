@@ -80,8 +80,10 @@ export const fetchUserCredits = async () => {
 // Chat Service
 const chatService = {
 
-  getUserChats: async (): Promise<ChatResponse> => {
-    const response = await api.get("/chats");
+  getUserChats: async (page: number = 1, limit: number = 10): Promise<ChatResponse> => {
+    const response = await api.get("/chats", {
+      params: { page, limit }
+    });
     return response.data;
   },
   

@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { Pagination, PaginationInfo } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function ChatTable() {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,13 +25,20 @@ export function ChatTable() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await chatService.getUserChats();
+      // Add pagination parameters to the API call
+      const response = await chatService.getUserChats(currentPage, pageSize);
       const allChats = response.data;
+      
+      // Set total count from pagination data
+      if (response.pagination) {
+        setTotalItems(response.pagination.total);
+      }
       
       // Extract unique users from chats
       const uniqueUsers = new Map<string, User>();
@@ -68,13 +76,13 @@ export function ChatTable() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPage, pageSize]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
   
-  // Filter and paginate users
+  // Filter users
   useEffect(() => {
     const filtered = users.filter(user => userChats[user.id]?.length > 0);
     setFilteredUsers(filtered);
@@ -82,10 +90,8 @@ export function ChatTable() {
   
   // Get paginated data
   const paginatedUsers = useCallback(() => {
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return filteredUsers.slice(start, end);
-  }, [filteredUsers, currentPage, pageSize]);
+    return filteredUsers;
+  }, [filteredUsers]);
 
   const handleViewChatHistory = async (user: User, chatId: string) => {
     try {
@@ -124,6 +130,13 @@ export function ChatTable() {
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    setLoading(true);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setCurrentPage(1); // Reset to first page when changing page size
+    setLoading(true);
   };
 
   return (
@@ -139,7 +152,10 @@ export function ChatTable() {
       )}
 
       {loading ? (
-        <div className="text-center py-8">Loading users and chats...</div>
+        <div className="text-center py-8">
+          <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+          Loading users and chats...
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="overflow-x-auto">
@@ -255,13 +271,32 @@ export function ChatTable() {
           
           {filteredUsers.length > 0 && (
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-between items-center">
-              <PaginationInfo 
-                totalItems={filteredUsers.length}
-                pageSize={pageSize}
-                currentPage={currentPage}
-              />
+              <div className="flex items-center gap-4">
+                <PaginationInfo 
+                  totalItems={totalItems}
+                  pageSize={pageSize}
+                  currentPage={currentPage}
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Items per page:</span>
+                  <Select 
+                    value={pageSize.toString()} 
+                    onValueChange={handlePageSizeChange}
+                  >
+                    <SelectTrigger className="h-8 w-20">
+                      <SelectValue placeholder="10" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <Pagination
-                totalItems={filteredUsers.length}
+                totalItems={totalItems}
                 pageSize={pageSize}
                 currentPage={currentPage}
                 onPageChange={handlePageChange}
