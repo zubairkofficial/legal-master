@@ -183,16 +183,23 @@ class ChatController {
         try {
             const { page = 1, limit = 10, search } = req.query;
             const offset = (page - 1) * limit;
-            let where
+            let where = {};
+            
             // Build filter conditions
             if (req.user.role === 'admin') {
+                // Admin can see all chats
                 where = {};
             } else {
+                // Regular users only see their own chats
                 where = { userId: req.user.id };
             }
+            
             if (search) {
                 where.title = { [Op.iLike]: `%${search}%` };
             }
+
+            // Get total count for pagination
+            const totalCount = await Chat.count({ where });
 
             const chats = await Chat.findAll({
                 where: where,
@@ -219,10 +226,10 @@ class ChatController {
                 success: true,
                 data: chats,
                 pagination: {
-                    total: chats.count,
+                    total: totalCount,
                     page: parseInt(page),
                     limit: parseInt(limit),
-                    pages: Math.ceil(chats.count / limit)
+                    pages: Math.ceil(totalCount / limit)
                 }
             });
         } catch (error) {
