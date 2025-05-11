@@ -51,13 +51,14 @@ export function Header() {
               { path: "/blog", label: "Blog" },
               { path: "/about", label: "About" }
             ].map((item) => (
-              <Link 
+              <Link
                 key={item.path}
-                to={item.path} 
+                to={item.path}
+                onClick={(e) => e.preventDefault()}
                 className={cn(
                   "font-medium text-sm transition-colors relative group",
-                  isActive(item.path) 
-                    ? "text-primary font-semibold" 
+                  isActive(item.path)
+                    ? "text-primary font-semibold"
                     : "text-gray-600 hover:text-primary"
                 )}
               >
@@ -116,9 +117,10 @@ export function Header() {
                 { path: "/blog", label: "Blog" },
                 { path: "/about", label: "About" }
               ].map((item) => (
-                <Link 
+                <Link
                   key={item.path}
-                  to={item.path} 
+                  to={item.path}
+                  onClick={(e) => e.preventDefault()}
                   className={cn(
                     "py-2 px-3 rounded-md transition-colors text-sm",
                     isActive(item.path)

@@ -15,6 +15,7 @@ import Chat from "./pages/user/chat/chat";
 import Auth from "./components/auth";
 import ProfileSettings from "./pages/profile/ProfileSettings";
 import AdminSettings from "./pages/admin/settings";
+import NotFound from "./pages/NotFound";
 
 import SubscriptionManagement from "./pages/admin/subscription";
 import Products from "./pages/products";
@@ -24,30 +25,30 @@ import TrialHistory from "./pages/user/trial/trialHistory";
 import TrialsPage from "./pages/admin/trials";
 
 const router = createBrowserRouter([
-  
+
     {
         path: "/",
-        element: <LandingPage />
+        element: <Auth isAuth={false}><LandingPage /></Auth>
     },
     {
         path: "/login",
-        element: <SignIn />  // Redirect old login to new sign-in
+        element: <Auth isAuth={false}><SignIn /> </Auth>// Redirect old login to new sign-in
     },
     {
         path: "/sign-in",
-        element: <SignIn />
+        element: <Auth isAuth={false}><SignIn /></Auth>
     },
     {
         path: "/sign-up",
-        element: <SignUp />
+        element:<Auth isAuth={false}> <SignUp /></Auth>
     },
     {
         path: "/forgot-password",
-        element: <ForgotPassword />
+        element:<Auth isAuth={false}> <ForgotPassword /></Auth>
     },
     {
         path: "/reset-password",
-        element: <ResetPassword />
+        element:<Auth isAuth={false}> <ResetPassword /></Auth>
     },
     {
         path: "/products",
@@ -56,7 +57,8 @@ const router = createBrowserRouter([
     // Admin routes
     {
         path: "/admin",
-        element: <><AdminLayout/></>,
+        element:
+            <Auth isAuth={true} isAdmin={true}><AdminLayout /></Auth>,
         children: [
             {
                 path: "chats",
@@ -93,13 +95,13 @@ const router = createBrowserRouter([
             {
                 path: "trials",
                 element: <TrialsPage />
-            }
+            } 
         ]
     },
     // User routes
     {
         path: "/chat",
-        element: <Auth isAuth={true}><UserLayout/></Auth>,
+        element: <Auth isAuth={true}><UserLayout /></Auth>,
         children: [
             {
                 path: "new",
@@ -121,7 +123,7 @@ const router = createBrowserRouter([
     },
     {
         path: "/user",
-        element: <Auth isAuth={true}><UserLayout/></Auth>,
+        element: <Auth isAuth={true}><UserLayout /></Auth>,
         children: [
             {
                 path: "trial",
@@ -136,6 +138,10 @@ const router = createBrowserRouter([
                 element: <TrialHistory />
             }
         ]
+    },
+    {
+        path: "*",
+        element: <NotFound />
     }
 ]);
 
