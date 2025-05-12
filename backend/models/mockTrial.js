@@ -47,13 +47,6 @@ export default function initMockTrialModel(sequelize) {
         }
     );
 
-    // Define associations
-    MockTrial.associate = function (models) {
-        MockTrial.belongsTo(models.User, {
-            foreignKey: 'userId',
-            as: 'user',
-        });
-    };
 
     return MockTrial;
 }

@@ -130,10 +130,10 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium">
-                      {variant === "admin" ? "Admin User" : "John Doe"}
+                      {variant === "admin" ? "Admin User" : user?.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {variant === "admin" ? "Administrator" : "User"}
+                      {variant === "admin" ? "Administrator" : user?.email}
                     </p>
                   </div>
                 </Link>

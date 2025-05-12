@@ -3,6 +3,21 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
 
+const NAV_LINKS = [
+  { id: "about", label: "About" },
+  { id: "services", label: "Features" },
+  { id: "pricing", label: "Pricing" },
+  { id: "testimonials", label: "Reviews" },
+ 
+];
+
+function scrollToSection(id: string) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -37,37 +52,24 @@ export function Header() {
       <div className="mx-20">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 transition-transform hover:scale-105">
+          <a href="#hero" className="flex items-center space-x-2 transition-transform hover:scale-105" onClick={e => { e.preventDefault(); scrollToSection('hero'); }}>
             <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
-          </Link>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            {[
-              { path: "/", label: "Home" },
-              { path: "/features", label: "Features" },
-              { path: "/legal-assistant", label: "Legal Assistant" },
-              { path: "/pricing", label: "Pricing" },
-              { path: "/blog", label: "Blog" },
-              { path: "/about", label: "About" }
-            ].map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={(e) => e.preventDefault()}
+            {NAV_LINKS.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                onClick={e => { e.preventDefault(); scrollToSection(item.id); }}
                 className={cn(
-                  "font-medium text-sm transition-colors relative group",
-                  isActive(item.path)
-                    ? "text-primary font-semibold"
-                    : "text-gray-600 hover:text-primary"
+                  "font-medium text-sm transition-colors relative group text-gray-600 hover:text-primary"
                 )}
               >
                 {item.label}
-                <span className={cn(
-                  "absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full",
-                  isActive(item.path) && "w-full"
-                )} />
-              </Link>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+              </a>
             ))}
           </nav>
 
@@ -109,27 +111,17 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden mt-4 py-4 border-t animate-in slide-in-from-top duration-300 relative z-10 border-gray-100">
             <nav className="flex flex-col space-y-3">
-              {[
-                { path: "/", label: "Home" },
-                { path: "/features", label: "Features" },
-                { path: "/legal-assistant", label: "Legal Assistant" },
-                { path: "/pricing", label: "Pricing" },
-                { path: "/blog", label: "Blog" },
-                { path: "/about", label: "About" }
-              ].map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={(e) => e.preventDefault()}
+              {NAV_LINKS.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  onClick={e => { e.preventDefault(); scrollToSection(item.id); setIsMenuOpen(false); }}
                   className={cn(
-                    "py-2 px-3 rounded-md transition-colors text-sm",
-                    isActive(item.path)
-                      ? "bg-gray-50 text-primary font-medium"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-primary"
+                    "py-2 px-3 rounded-md transition-colors text-sm text-gray-600 hover:bg-gray-50 hover:text-primary"
                   )}
                 >
                   {item.label}
-                </Link>
+                </a>
               ))}
 
               <div className="flex flex-col space-y-3 pt-4 mt-2 border-t border-gray-100">

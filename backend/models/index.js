@@ -92,6 +92,15 @@ Subscription.belongsTo(SubscriptionPlan, {
     as: 'plan',
 });
 
+MockTrial.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user',
+});
+User.hasMany(MockTrial, {
+    foreignKey: 'userId',
+    as: 'mockTrials',
+});
+
 
 
 // Export models and sequelize instance

@@ -45,7 +45,7 @@ export default function Testimonials() {
   const [activeIndex, setActiveIndex] = useState(0);
   
   return (
-    <section className="py-16 md:py-24 bg-card">
+    <section id="testimonials" className="py-16 md:py-24 bg-card">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">

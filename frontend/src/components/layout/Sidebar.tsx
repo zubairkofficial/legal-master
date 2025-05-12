@@ -29,7 +29,7 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const adminLinks = [
-    { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/admin/users", icon: Users, label: "Users" },
     { href: "/admin/categories", icon: FileText, label: "Categories" },
     { href: "/admin/questions", icon: BarChart3, label: "Questions" },
