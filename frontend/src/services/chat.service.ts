@@ -106,7 +106,8 @@ const chatService = {
   // Stream the initial message for a newly created chat
   streamInitialMessage: async (
     chatId: string, 
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
+    onError?: (error: string) => void
   ): Promise<void> => {
     try {
       const response = await fetch(`${api.defaults.baseURL}/chats/${chatId}/initial-message`, {
@@ -118,12 +119,19 @@ const chatService = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        const errorMessage = `HTTP error! status: ${response.status}, message: ${errorText}`;
+        console.error(errorMessage);
+        if (onError) onError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error('Response body reader could not be obtained');
+        const errorMessage = 'Response body reader could not be obtained';
+        console.error(errorMessage);
+        if (onError) onError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const decoder = new TextDecoder();
@@ -150,16 +158,19 @@ const chatService = {
                 onChunk(data.content);
               } else if (data.error) {
                 console.error('Error in stream:', data.error);
+                if (onError) onError(data.error);
                 throw new Error(data.error);
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error('Error parsing SSE message:', e, message);
+              if (onError) onError(`Error parsing message: ${e.message || 'Unknown error'}`);
             }
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in streamInitialMessage:', error);
+      if (onError) onError(error.message || 'An unknown error occurred while streaming initial message');
       throw error;
     }
   },
@@ -176,7 +187,8 @@ const chatService = {
 
   sendStreamMessage: async (
     data: SendMessageData, 
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
+    onError?: (error: string) => void
   ): Promise<ChatMessage> => {
     console.log('Sending stream message:', data);
     
@@ -192,12 +204,19 @@ const chatService = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        const errorMessage = `HTTP error! status: ${response.status}, message: ${errorText}`;
+        console.error(errorMessage);
+        if (onError) onError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error('Response body reader could not be obtained');
+        const errorMessage = 'Response body reader could not be obtained';
+        console.error(errorMessage);
+        if (onError) onError(errorMessage);
+        throw new Error(errorMessage);
       }
 
       const decoder = new TextDecoder();
@@ -226,10 +245,12 @@ const chatService = {
                 onChunk(data.content);
               } else if (data.error) {
                 console.error('Error in stream:', data.error);
+                if (onError) onError(data.error);
                 throw new Error(data.error);
               }
-            } catch (e) {
+            } catch (e: any) {
               console.error('Error parsing SSE message:', e, message);
+              if (onError) onError(`Error parsing message: ${e.message || 'Unknown error'}`);
             }
           }
         }
@@ -243,8 +264,9 @@ const chatService = {
         sender: 'system',
         createdAt: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in sendStreamMessage:', error);
+      if (onError) onError(error.message || 'An unknown error occurred while sending the message');
       throw error;
     }
   },

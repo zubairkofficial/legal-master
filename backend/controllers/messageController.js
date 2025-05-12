@@ -76,8 +76,8 @@ class MessageController {
 
             // Check if the user has sufficient credits
             const user = await User.findByPk(userId);
-            if (user && user.credits < 50) {
-                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
+            if (user && user.credits <= 0) {
+                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits. Please purchase a plan to continue.' })}\n\n`);
                 res.end();
                 return;
             }
@@ -177,13 +177,12 @@ class MessageController {
 
             // Deduct tokens from user's credits
             if (user && user.credits >= tokens) {
-
                 user.credits -= tokens;
                 await user.save();
             } else {
                 user.credits = 0
                 await user.save();
-                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits' })}\n\n`);
+                res.write(`data: ${JSON.stringify({ error: 'Insufficient credits. Please purchase a plan to continue.' })}\n\n`);
                 res.end();
                 return;
             }

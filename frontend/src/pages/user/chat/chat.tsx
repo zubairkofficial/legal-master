@@ -184,31 +184,56 @@ const Chat = () => {
         
         // Stream the initial message
         try {
-          await chatService.streamInitialMessage(id, (chunk) => {
-            setMessages((prev) => {
-              // Find the initial message
-              const initialMessage = prev.find(m => m.id === initialMessageId);
-              if (initialMessage) {
-                // Update the existing message
+          await chatService.streamInitialMessage(
+            id, 
+            (chunk) => {
+              setMessages((prev) => {
+                // Find the initial message
+                const initialMessage = prev.find(m => m.id === initialMessageId);
+                if (initialMessage) {
+                  // Update the existing message
+                  return prev.map(m => 
+                    m.id === initialMessageId 
+                      ? { ...m, message: m.message + chunk } 
+                      : m
+                  );
+                } else {
+                  // If somehow message was removed, create a new one
+                  return [...prev, {
+                    id: initialMessageId,
+                    message: chunk,
+                    sender: 'system',
+                    timestamp: new Date()
+                  }];
+                }
+              });
+            },
+            (errorMessage) => {
+              // Handle error from stream
+              setApiError(`Error loading initial message: ${errorMessage}`);
+              
+              // Replace the empty message with an error message
+              setMessages((prev) => {
                 return prev.map(m => 
                   m.id === initialMessageId 
-                    ? { ...m, message: m.message + chunk } 
+                    ? { ...m, message: `Error: ${errorMessage}` } 
                     : m
                 );
-              } else {
-                // If somehow message was removed, create a new one
-                return [...prev, {
-                  id: initialMessageId,
-                  message: chunk,
-                  sender: 'system',
-                  timestamp: new Date()
-                }];
-              }
-            });
-          });
+              });
+            }
+          );
         } catch (error) {
           console.error('Error streaming initial message:', error);
           setApiError('Failed to load initial message. Please refresh the page.');
+          
+          // Update the placeholder message with error
+          setMessages((prev) => {
+            return prev.map(m => 
+              m.id === initialMessageId 
+                ? { ...m, message: `Error loading message: ${error instanceof Error ? error.message : 'Unknown error'}` } 
+                : m
+            );
+          });
         }
       }
     } catch (error) {
@@ -376,6 +401,26 @@ const Chat = () => {
               };
               return [...prev, systemMessage];
             }
+          });
+        },
+        (errorMessage) => {
+          // Handle stream errors
+          setApiError(`Error from server: ${errorMessage}`);
+          // Add error message to chat as system message
+          setMessages(prev => {
+            // Check if the last message is already an error message
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage && lastMessage.sender === 'system' && lastMessage.message.includes('Error:')) {
+              return prev; // Don't add duplicate error messages
+            }
+            
+            // Add new error message
+            return [...prev, {
+              id: Date.now().toString(),
+              message: `Error: ${errorMessage}`,
+              sender: 'system',
+              timestamp: new Date(),
+            }];
           });
         }
       );
