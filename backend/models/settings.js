@@ -18,6 +18,10 @@ export default function initSettingsModel(sequelize) {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
+            systemPrompt: {
+                type: DataTypes.TEXT,
+                allowNull: true,
+            },
             service: {
                 type: DataTypes.STRING,
                 allowNull: false,

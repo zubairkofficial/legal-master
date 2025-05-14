@@ -43,7 +43,7 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
 
   useEffect(() => {
     fetchUserCredits();
-  }, [])
+  }, []);
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-40 h-16">
@@ -74,23 +74,22 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
         </div>
 
         {/* Search */}
-        <div className="hidden md:flex items-center relative max-w-md w-full">
-
-        </div>
+        <div className="hidden md:flex items-center relative max-w-md w-full"></div>
 
         {/* Right side icons and profile */}
         <div className="flex items-center space-x-4">
           {/* Credits Display - Only show for user variant */}
           {variant === "user" && (
-            <> <div className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg">
-              <Coins className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-primary">
-                {user?.credits || 0} Credits
-              </span>
-
-            </div>
+            <>
+              {" "}
+              <div className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg">
+                <Coins className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  {user?.credits || 0} Credits
+                </span>
+              </div>
               <Button
-                onClick={() => navigate('/user/trial')}
+                onClick={() => navigate("/user/trial")}
                 variant="ghost"
                 className="hidden lg:flex items-center space-x-2 ml-4 hover:bg-primary/50 transition-colors duration-200"
               >
@@ -101,8 +100,6 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
               </Button>
             </>
           )}
-
-
 
           {/* Profile Avatar with Dropdown */}
           <DropdownMenu>
@@ -121,7 +118,7 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
-                <Link to="/profile" className="flex items-center cursor-pointer">
+                <Link to={variant == "admin" ? "/admin/profile" : "/chat/profile"} className="flex items-center cursor-pointer">
                   <Avatar className="h-8 w-8 mr-2">
                     <AvatarImage src="https://github.com/shadcn.png" alt="User" />
                     <AvatarFallback>
@@ -140,19 +137,27 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to={variant == "admin" ? "/admin/profile" : "/chat/profile"} className="cursor-pointer">
+                <Link
+                  to={variant == "admin" ? "/admin/profile" : "/chat/profile"}
+                  className="cursor-pointer"
+                >
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              {variant == 'user' && <DropdownMenuItem asChild>
-                <Link to={"/chat/products"} className="cursor-pointer">
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  <span>Upgrade</span>
-                </Link>
-              </DropdownMenuItem>}
+              {variant == "user" && (
+                <DropdownMenuItem asChild>
+                  <Link to={"/chat/products"} className="cursor-pointer">
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    <span>Upgrade</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 focus:text-red-500">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer text-red-500 focus:text-red-500"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
               </DropdownMenuItem>
@@ -164,9 +169,14 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
       {/* Credits Popup */}
       {variant === "user" && (
         <>
-
-          <CreditsPopup isOpen={isCreditsOpen} onClose={() => setIsCreditsOpen(false)} />
-        </>)}
+          <CreditsPopup
+            isOpen={isCreditsOpen}
+            onClose={() => setIsCreditsOpen(false)}
+          />
+        </>
+      )}
     </header>
   );
-} 
+}
+
+

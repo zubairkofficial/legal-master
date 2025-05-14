@@ -59,9 +59,13 @@ export default function SignUp() {
       
       // Redirect to login page
       navigate("/sign-in");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Signup error:", error);
-      Helpers.showToast(error.response?.data?.message || "An error occurred during registration", "error");
+      if (error instanceof Error) {
+        Helpers.showToast(error.message || "An error occurred during registration", "error");
+      } else {
+        Helpers.showToast("An unexpected error occurred. Please try again later.", "error");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +77,9 @@ export default function SignUp() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8 bg-background order-1 lg:order-0">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center space-x-2 mb-8">
-            <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
+            <Link to="/">
+              <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
+            </Link>
           </div>
           
           <div className="text-center mb-8">
@@ -213,8 +219,9 @@ export default function SignUp() {
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
         <div className="relative z-10 text-white max-w-md p-12">
           <div className="flex items-center space-x-3 mb-8">
-            <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
-
+            <Link to="/">
+              <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
+            </Link>
           </div>
           <h2 className="text-3xl font-bold mb-6">Cutting-Edge Legal Solutions Powered by AI</h2>
           <p className="mb-6 text-white/80">

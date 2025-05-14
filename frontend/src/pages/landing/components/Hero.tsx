@@ -26,7 +26,7 @@ export default function Hero() {
             <Button size="lg" className="bg-[#BB8A28] hover:bg-[#BB8A28]/90 transition-all duration-300">
               <Link to='/sign-in'>Get Started</Link>
             </Button>
-            <Button size="lg" variant="outline"  className="border-[#BB8A28] text-[#BB8A28] hover:bg-[#BB8A28]/10 transition-all duration-300">
+            <Button size="lg" variant="outline"  className="border-[#BB8A28] text-[#BB8A28] hover:bg-[#BB8A28]/10 hover:text-[#BB8A28] transition-all duration-300">
               <Link to='sign-in'>Try Legal Assistant</Link>
             </Button>
           </div>

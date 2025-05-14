@@ -78,7 +78,7 @@ export function Header() {
                 asChild
               >
                 <Link to="/sign-up">
-                  Start Consulting
+                  Sign Up
                 </Link>
               </Button>
             </div>
@@ -130,7 +130,7 @@ export function Header() {
                   asChild
                 >
                   <Link to="/sign-up">
-                    Start Consulting
+                    Sign Up
                   </Link>
                 </Button>
               </div>

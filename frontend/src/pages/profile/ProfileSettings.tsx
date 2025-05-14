@@ -278,7 +278,7 @@ const ProfileSettings = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-primary/25"
+                className="w-full hover:from-primary/90 hover:to-secondary/90 text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-primary/25"
                 disabled={profileForm.formState.isSubmitting}
               >
                 {profileForm.formState.isSubmitting ? (
@@ -318,7 +318,7 @@ const ProfileSettings = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-primary/25"
+                className="w-full hover:from-primary/90 hover:to-secondary/90 text-primary-foreground transition-all duration-300 shadow-lg hover:shadow-primary/25"
                 disabled={passwordForm.formState.isSubmitting}
               >
                 {passwordForm.formState.isSubmitting ? (

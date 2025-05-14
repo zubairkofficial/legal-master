@@ -59,9 +59,7 @@ const questionService = {
 
   getQuestionsByCategory: async (categoryId: string): Promise<QuestionResponse> => {
     try {
-      console.log(`Fetching questions for category ${categoryId} from API`);
       const response = await api.get(`/categories/${categoryId}/questions`);
-      console.log('Questions API response:', response);
 
       // Make sure we're returning the expected structure
       if (response.data && response.data.data) {

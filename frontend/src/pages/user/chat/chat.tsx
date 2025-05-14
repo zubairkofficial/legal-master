@@ -10,6 +10,7 @@ import { useTheme } from '@/components/theme/theme-provider';
 import LegalQuestionnaire from '@/components/forms/LegalQuestionnaire';
 import { eventEmitter } from '@/lib/eventEmitter';
 import ChatGPTFormatter from '@/components/chatgptformatter';
+import Helpers from '@/config/helpers';
 
 enum ChatStage {
   CATEGORY_SELECTION = 'category_selection',
@@ -106,17 +107,13 @@ const Chat = () => {
 
   // Scroll to bottom whenever messages update()
   useEffect(() => {
-    console.log("Messages updated, scrolling to bottom:", messages.length);
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
   // Debug logging for stage changes
-  useEffect(() => {
-    console.log('Stage changed to:', stage);
-    
+  useEffect(() => {   
     // If we're in question selection stage but have no questions, use mock data
     if (stage === ChatStage.QUESTION_SELECTION && questions.length === 0) {
-      console.log('No questions found, using mock data');
       setQuestions(MOCK_QUESTIONS);
     }
   }, [stage, questions.length]);
@@ -125,14 +122,11 @@ const Chat = () => {
     try {
       setIsLoading(true);
       setApiError(null);
-      console.log('Starting to load categories');
       const response = await categoryService.getAllCategories();
       
       if (response && response.data && Array.isArray(response.data)) {
-        console.log('Categories loaded successfully:', response.data);
         setCategories(response.data);
       } else {
-        console.error('Unexpected categories response format:', response);
         setApiError('Failed to load categories properly. Please try refreshing the page.');
         setCategories([]);
       }
@@ -148,16 +142,12 @@ const Chat = () => {
   const loadExistingChat = async (id: string) => {
     try {
       setIsLoading(true);
-      console.log('Loading existing chat:', id);
       const chatData = await chatService.getChatById(id);
-      console.log('Chat data loaded:', chatData);
       setCurrentChatId(id);
       setStage(ChatStage.CHAT_INTERACTION);
 
       // Load messages for the chat
-      console.log('Loading messages for chat:', id);
       const messagesData = await chatService.getChatMessages(id);
-      console.log('Messages loaded:', messagesData);
       
       if (Array.isArray(messagesData) && messagesData.length > 0) {
         setMessages(
@@ -169,10 +159,6 @@ const Chat = () => {
           }))
         );
       } else {
-        // If no messages found, this might be a newly created chat
-        // Start streaming the initial message
-        console.log('No messages found, starting initial message stream');
-        
         // Create a placeholder for the incoming message
         const initialMessageId = Date.now().toString();
         setMessages([{
@@ -252,17 +238,12 @@ const Chat = () => {
       // Clear previously selected question when changing category
       setSelectedQuestion(null);
       
-      console.log('Fetching questions for category:', categoryId);
-      
       // Load questions for the selected category
       const response = await questionService.getQuestionsByCategory(categoryId);
-      console.log('Full response from getQuestionsByCategory:', response);
       
       const questionsData = response.data;
-      console.log('Received questions:', questionsData);
       
       if (Array.isArray(questionsData) && questionsData.length > 0) {
-        console.log('Setting questions with valid data:', questionsData);
         setQuestions(questionsData);
         
         // Immediately change the stage
@@ -318,13 +299,6 @@ const Chat = () => {
     try {
       setIsLoading(true);
       setLegalQuestionnaireData(formData);
-      
-      // Step 1: Create the chat in the database first
-      console.log('Creating new chat with data:', {
-        categoryId: selectedCategory,
-        questionResponses,
-        legalQuestionnaire: formData
-      });
 
       const chatResponse = await chatService.createChat({
         categoryId: selectedCategory,
@@ -332,7 +306,6 @@ const Chat = () => {
         legalQuestionnaire: formData
       });
 
-      console.log('Chat created successfully:', chatResponse);
       const newChatId = chatResponse.id;
       
       // Set current chat ID and change stage to chat interaction
@@ -347,8 +320,9 @@ const Chat = () => {
       
       // Emit event to notify other components that a new chat was created
       eventEmitter.emit('chatCreated', newChatId);
-      
+
     } catch (error) {
+      Helpers.showToast(error?.response?.data?.message, "error");
       console.error('Failed to start chat:', error);
       setApiError('Failed to create chat. Please try again.');
     } finally {
@@ -373,26 +347,21 @@ const Chat = () => {
       };
       
       setMessages(prev => [...prev, userMessage]);
-      console.log('Added user message:', userMessage);
 
       // Send message to the backend and handle streaming response
-      console.log('Sending message to backend:', { chatId: currentChatId, message: newMessage });
       await chatService.sendStreamMessage(
         { chatId: currentChatId, message: newMessage },
         (chunk) => {
-          console.log('Received chunk:', chunk);
           setMessages(prev => {
             const lastMessage = prev[prev.length - 1];
             if (lastMessage && lastMessage.sender === 'system') {
               // Update the last system message
-              console.log('Updating existing system message');
               return [
                 ...prev.slice(0, -1),
                 { ...lastMessage, message: lastMessage.message + chunk }
               ];
             } else {
               // Create a new system message
-              console.log('Creating new system message with chunk');
               const systemMessage: Message = {
                 id: Date.now().toString(),
                 message: chunk,
@@ -446,7 +415,6 @@ const Chat = () => {
           : 'border-border bg-card'
       }`}
       onClick={() => {
-        console.log('Category clicked:', category.id);
         handleCategorySelect(category.id);
       }}
     >

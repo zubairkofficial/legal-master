@@ -1,12 +1,10 @@
-//@ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { CreditCard } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import api from '@/services/api';
 import useUserStore from '@/store/useUserStore';
 import SquarePaymentForm from './SquarePaymentForm';
@@ -24,7 +22,7 @@ interface PaymentMethodModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPaymentMethodSelect: (paymentMethodId: string) => void;
-  onDirectPayment: (paymentResult: any) => void;
+  onDirectPayment: (paymentResult: undefined) => void;
   amount: number;
   planId: string;
   processingPayment?: boolean;
@@ -35,7 +33,6 @@ export default function PaymentMethodModal({
   onClose, 
   onPaymentMethodSelect, 
   onDirectPayment,
-  planId,
   amount,
   processingPayment = false
 }: PaymentMethodModalProps) {
@@ -99,12 +96,12 @@ export default function PaymentMethodModal({
     handleAddPaymentMethod();
   };
 
-  const handlePaymentSuccess = (paymentResult: any) => {
+  const handlePaymentSuccess = (paymentResult: undefined) => {
     onDirectPayment(paymentResult);
     onClose();
   };
 
-  const handlePaymentError = (error: any) => {
+  const handlePaymentError = (error: unknown) => {
     console.error('Payment error:', error);
   };
 
@@ -116,10 +113,10 @@ export default function PaymentMethodModal({
         </DialogHeader>
 
         <Tabs defaultValue="direct-payment" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          {/* <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="direct-payment" disabled={processingPayment}>Pay with Card</TabsTrigger>
             <TabsTrigger value="saved-cards" disabled={processingPayment}>Saved Cards</TabsTrigger>
-          </TabsList>
+          </TabsList> */}
           
           <TabsContent value="direct-payment" className="space-y-4">
             <SquarePaymentForm 

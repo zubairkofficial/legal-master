@@ -87,7 +87,7 @@ export function ChatHistorySidebar({ collapsed = false, className }: ChatHistory
   // Filter chats based on ID since there's no title
   const filteredChats = searchTerm.trim() === '' 
     ? chats 
-    : chats.filter(chat => chat.id.toLowerCase().includes(searchTerm.toLowerCase()));
+    : chats.filter(chat => chat.id.toLowerCase().includes());
 
   const handleNewChat = () => {
  

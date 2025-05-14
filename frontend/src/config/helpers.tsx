@@ -4,7 +4,7 @@ import Toast from "../components/common/toast";
 class Helpers {
   static localhost: string = "http://localhost:8080";
   static server: string = "https://api.legalmasterai.com/backend";
-  static basePath: string = Helpers.server;
+  static basePath: string = Helpers.localhost;
   static apiUrl: string = `${Helpers.basePath}/api/v1`;
 
   static authUser: Record<string, any> = JSON.parse(
@@ -52,19 +52,19 @@ class Helpers {
 
   static showToast = (
     message: string,
-    type: 'success' | 'error' | 'info' = 'info',
+    type: "success" | "error" | "info" = "info",
     duration: number = 3000
   ): void => {
     // Create a container for the toast if it doesn't exist
-    let toastContainer = document.getElementById('toast-container');
+    let toastContainer = document.getElementById("toast-container");
     if (!toastContainer) {
-      toastContainer = document.createElement('div');
-      toastContainer.id = 'toast-container';
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toast-container";
       document.body.appendChild(toastContainer);
     }
 
     // Create a div for this specific toast
-    const toastMount = document.createElement('div');
+    const toastMount = document.createElement("div");
     toastContainer.appendChild(toastMount);
 
     // Render the Toast component

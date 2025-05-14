@@ -86,24 +86,6 @@ export default function Testimonials() {
         </div>
         
         <div className="mt-12 sm:mt-20 text-center">
-          <div className="inline-flex items-center justify-center p-1 rounded-full bg-card shadow-lg mb-8 sm:mb-10 overflow-x-auto max-w-full">
-            {[...Array(5)].map((_, index) => (
-              <div 
-                key={index}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 mx-1 sm:mx-2 overflow-hidden flex-shrink-0"
-              >
-                <img 
-                  src={testimonials[index % testimonials.length].avatarUrl} 
-                  alt="Client" 
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = `https://placehold.co/100x100/BB8A28/FFF?text=${index + 1}`;
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          
           <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 px-4">
             Next-Generation <span className="text-[#BB8A28]">Legal</span> Support with AI
           </h3>

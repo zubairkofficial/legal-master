@@ -61,7 +61,7 @@ class SettingsController {
 
     // Create a new user
     static async createOrUpdateSettings(req, res) {
-        const { model, apiKey } = req.body;
+        const { model, apiKey, systemPrompt } = req.body;
         
         try {
             // Check if model already exists
@@ -84,6 +84,7 @@ class SettingsController {
             const newSettings = await Settings.create({
                 model,
                 apiKey,
+                systemPrompt
             });
             
             return res.status(201).json({

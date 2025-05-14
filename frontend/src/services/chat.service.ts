@@ -142,7 +142,6 @@ const chatService = {
         if (done) break;
         
         const chunk = decoder.decode(value, { stream: true });
-        console.log('Raw chunk received:', chunk);
         
         // Each SSE message is formatted as "data: {...}\n\n"
         const messages = chunk.split('\n\n').filter(msg => msg.trim() !== '');
@@ -154,7 +153,6 @@ const chatService = {
               const data = JSON.parse(jsonStr);
               
               if (data.content) {
-                console.log('Parsed content from chunk:', data.content);
                 onChunk(data.content);
               } else if (data.error) {
                 console.error('Error in stream:', data.error);
@@ -189,9 +187,7 @@ const chatService = {
     data: SendMessageData, 
     onChunk: (chunk: string) => void,
     onError?: (error: string) => void
-  ): Promise<ChatMessage> => {
-    console.log('Sending stream message:', data);
-    
+  ): Promise<ChatMessage> => {    
     try {
       const response = await fetch(`${api.defaults.baseURL}/chats/${data.chatId}/messages`, {
         method: 'POST',
@@ -228,8 +224,7 @@ const chatService = {
         if (done) break;
         
         const chunk = decoder.decode(value, { stream: true });
-        console.log('Raw chunk received:', chunk);
-        
+
         // Each SSE message is formatted as "data: {...}\n\n"
         const messages = chunk.split('\n\n').filter(msg => msg.trim() !== '');
         
@@ -240,7 +235,6 @@ const chatService = {
               const data = JSON.parse(jsonStr);
               
               if (data.content) {
-                console.log('Parsed content from chunk:', data.content);
                 finalMessage += data.content;
                 onChunk(data.content);
               } else if (data.error) {

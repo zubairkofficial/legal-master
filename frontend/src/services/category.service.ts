@@ -32,10 +32,7 @@ interface UpdateCategoryData {
 const categoryService = {
   getAllCategories: async (): Promise<CategoryResponse> => {
     try {
-      console.log('Fetching categories from API');
       const response = await api.get("/categories");
-      console.log('Categories API response:', response);
-      
       // Make sure we're returning the expected structure
       if (response.data && response.data.data) {
         return response.data;

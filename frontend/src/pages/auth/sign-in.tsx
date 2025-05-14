@@ -46,9 +46,13 @@ export default function SignIn() {
       } else {
         navigate("/chat/new", { state: { stage: 'category_selection' } });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
-      Helpers.showToast(error.response?.data?.message || "Invalid credentials. Please try again.", "error");
+      if (error instanceof Error) {
+        Helpers.showToast(error.message || "Invalid credentials. Please try again.", "error");
+      } else {
+        Helpers.showToast("An unexpected error occurred. Please try again later.", "error");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +65,9 @@ export default function SignIn() {
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
         <div className="relative z-10 text-white max-w-md p-12">
           <div className="flex items-center space-x-3 mb-8">
-            <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
+            <Link to="/">
+              <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
+            </Link>
           </div>
           <h2 className="text-3xl font-bold mb-6">AI-Powered Legal Assistance at Your Fingertips</h2>
           <p className="mb-6 text-white/80">
