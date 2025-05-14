@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../lib/utils";
 
@@ -21,7 +21,6 @@ function scrollToSection(id: string) {
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
 
   // Add scroll effect
   useEffect(() => {
@@ -34,12 +33,6 @@ export function Header() {
   
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
-  const isActive = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/";
-    }
-    return location.pathname.startsWith(path);
-  };
 
   return (
     <header className={cn(
