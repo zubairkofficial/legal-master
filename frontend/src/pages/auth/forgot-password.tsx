@@ -22,13 +22,9 @@ export default function ForgotPassword() {
       await authService.forgotPassword({ email });
       setIsSuccessful(true);
       Helpers.showToast("Password reset instructions have been sent to your email", "success");
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Forgot password error:", error);
-      if (error instanceof Error) {
-        Helpers.showToast(error.message || "An error occurred. Please try again.", "error");
-      } else {
-        Helpers.showToast("An unexpected error occurred. Please try again later.", "error");
-      }
+      Helpers.showToast(error.response?.data?.message || "An error occurred. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }

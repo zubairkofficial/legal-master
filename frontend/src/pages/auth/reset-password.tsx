@@ -49,16 +49,9 @@ export default function ResetPassword() {
       });
       setIsSuccessful(true);
       Helpers.showToast("Your password has been reset successfully", "success");
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Reset password error:", error);
-      if (error instanceof Error) {
-        Helpers.showToast(error.message || "Invalid or expired token", "error");
-      } else {
-        Helpers.showToast(
-          "An unexpected error occurred. Please try again later.",
-          "error"
-        );
-      }
+      Helpers.showToast(error.response?.data?.message || "Invalid or expired token", "error");
       setIsInvalidToken(true);
     } finally {
       setIsLoading(false);

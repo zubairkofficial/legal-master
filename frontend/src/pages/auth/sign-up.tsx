@@ -13,39 +13,45 @@ export default function SignUp() {
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  
+
   const validatePassword = (password: string) => {
     const minLength = 8;
     const hasNumber = /\d/.test(password);
     const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
+
     return password.length >= minLength && hasNumber && hasSpecial;
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!fullName || !email || !username || !password || !confirmPassword) {
       Helpers.showToast("Please fill in all fields", "error");
       return;
     }
-    
+
     if (password !== confirmPassword) {
       Helpers.showToast("Passwords do not match", "error");
       return;
     }
-    
+
     if (!validatePassword(password)) {
-      Helpers.showToast("Password must be at least 8 characters with 1 number and 1 special character", "error");
+      Helpers.showToast(
+        "Password must be at least 8 characters with 1 number and 1 special character",
+        "error"
+      );
       return;
     }
-    
+
     if (!agreed) {
-      Helpers.showToast("You must agree to the Terms of Service and Privacy Policy", "error");
+      Helpers.showToast(
+        "You must agree to the Terms of Service and Privacy Policy",
+        "error"
+      );
       return;
     }
-    
+
     try {
       setIsLoading(true);
       await authService.signup({
@@ -54,23 +60,26 @@ export default function SignUp() {
         username,
         password,
       });
-      
-      Helpers.showToast("Account created successfully. Please check your email for verification instructions.", "success");
-      
+
+      Helpers.showToast(
+        "Account created successfully. Please check your email for verification instructions.",
+        "success"
+      );
+
       // Redirect to login page
       navigate("/sign-in");
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Signup error:", error);
-      if (error instanceof Error) {
-        Helpers.showToast(error.message || "An error occurred during registration", "error");
-      } else {
-        Helpers.showToast("An unexpected error occurred. Please try again later.", "error");
-      }
+      Helpers.showToast(
+        error.response?.data?.message ||
+          "An error occurred during registration",
+        "error"
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex">
       {/* Form Side - Comes first for mobile */}
@@ -81,16 +90,21 @@ export default function SignUp() {
               <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
             </Link>
           </div>
-          
+
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold">Create your account</h1>
-            <p className="text-muted-foreground">Let's get started with your legal journey</p>
+            <p className="text-muted-foreground">
+              Let's get started with your legal journey
+            </p>
           </div>
-          
+
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <label htmlFor="full-name" className="block text-sm font-medium">
+                <label
+                  htmlFor="full-name"
+                  className="block text-sm font-medium"
+                >
                   Full Name
                 </label>
                 <input
@@ -103,7 +117,7 @@ export default function SignUp() {
                   placeholder="John Doe"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label htmlFor="email" className="block text-sm font-medium">
                   Email
@@ -118,7 +132,7 @@ export default function SignUp() {
                   placeholder="you@example.com"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label htmlFor="username" className="block text-sm font-medium">
                   Username
@@ -133,7 +147,7 @@ export default function SignUp() {
                   placeholder="johndoe"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-sm font-medium">
                   Password
@@ -148,12 +162,16 @@ export default function SignUp() {
                   placeholder="••••••••"
                 />
                 <div className="text-xs text-muted-foreground">
-                  Must be at least 8 characters with 1 number and 1 special character
+                  Must be at least 8 characters with 1 number and 1 special
+                  character
                 </div>
               </div>
-              
+
               <div className="space-y-2">
-                <label htmlFor="confirm-password" className="block text-sm font-medium">
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-sm font-medium"
+                >
                   Confirm Password
                 </label>
                 <input
@@ -166,7 +184,7 @@ export default function SignUp() {
                   placeholder="••••••••"
                 />
               </div>
-              
+
               <div className="flex items-start">
                 <div className="flex items-center h-5">
                   <input
@@ -191,7 +209,7 @@ export default function SignUp() {
                   </label>
                 </div>
               </div>
-              
+
               <Button
                 type="submit"
                 className="w-full"
@@ -201,11 +219,14 @@ export default function SignUp() {
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
-            
+
             <div className="text-center text-sm">
               <p className="text-muted-foreground">
                 Already have an account?{" "}
-                <Link to="/sign-in" className="text-[#BB8A28] hover:underline font-medium">
+                <Link
+                  to="/sign-in"
+                  className="text-[#BB8A28] hover:underline font-medium"
+                >
                   Sign in
                 </Link>
               </p>
@@ -213,7 +234,7 @@ export default function SignUp() {
           </div>
         </div>
       </div>
-      
+
       {/* Decorative Side */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#BB8A28] relative overflow-hidden justify-center items-center order-0 lg:order-1">
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
@@ -223,21 +244,30 @@ export default function SignUp() {
               <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
             </Link>
           </div>
-          <h2 className="text-3xl font-bold mb-6">Cutting-Edge Legal Solutions Powered by AI</h2>
+          <h2 className="text-3xl font-bold mb-6">
+            Cutting-Edge Legal Solutions Powered by AI
+          </h2>
           <p className="mb-6 text-white/80">
-            Join our trusted platform that connects clients with advanced AI legal resources, providing accessible and accurate legal assistance.
+            Join our trusted platform that connects clients with advanced AI
+            legal resources, providing accessible and accurate legal assistance.
           </p>
           <ul className="space-y-4 mb-6">
             <li className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
+                ✓
+              </div>
               <p>Access legal expertise 24/7</p>
             </li>
             <li className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
+                ✓
+              </div>
               <p>Generate and review legal documents</p>
             </li>
             <li className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
+                ✓
+              </div>
               <p>Secure and confidential assistance</p>
             </li>
           </ul>
@@ -245,4 +275,4 @@ export default function SignUp() {
       </div>
     </div>
   );
-} 
+}

@@ -46,13 +46,9 @@ export default function SignIn() {
       } else {
         navigate("/chat/new", { state: { stage: 'category_selection' } });
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      if (error instanceof Error) {
-        Helpers.showToast(error.message || "Invalid credentials. Please try again.", "error");
-      } else {
-        Helpers.showToast("An unexpected error occurred. Please try again later.", "error");
-      }
+      Helpers.showToast(error.response?.data?.message || "Invalid credentials. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
