@@ -35,15 +35,22 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
   };
 
   const fetchUserCredits = async () => {
-    const credits = await chatService.fetchUserCredits();
-    if (user) {
-      useUserStore.getState().setUser({ ...user, credits });
+    try {
+      const credits = await chatService.fetchUserCredits();
+      if (user) {
+        useUserStore.getState().updateUser({ credits });
+      }
+    } catch (error) {
+      console.error("Error fetching credits:", error);
     }
   };
 
+  // Fetch credits on mount and when user changes
   useEffect(() => {
-    fetchUserCredits();
-  }, []);
+    if (user) {
+      fetchUserCredits();
+    }
+  }, [user?.id]); // Only refetch when user ID changes
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-40 h-16">
@@ -81,8 +88,10 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
           {/* Credits Display - Only show for user variant */}
           {variant === "user" && (
             <>
-              {" "}
-              <div className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg">
+              <div
+                className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+                onClick={() => navigate("/chat/products")}
+              >
                 <Coins className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium text-primary">
                   {user?.credits || 0} Credits
@@ -118,9 +127,15 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
-                <Link to={variant == "admin" ? "/admin/profile" : "/chat/profile"} className="flex items-center cursor-pointer">
+                <Link
+                  to={variant == "admin" ? "/admin/profile" : "/chat/profile"}
+                  className="flex items-center cursor-pointer"
+                >
                   <Avatar className="h-8 w-8 mr-2">
-                    <AvatarImage src="https://github.com/shadcn.png" alt="User" />
+                    <AvatarImage
+                      src="https://github.com/shadcn.png"
+                      alt="User"
+                    />
                     <AvatarFallback>
                       {variant === "admin" ? "AD" : "US"}
                     </AvatarFallback>
@@ -178,5 +193,3 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
     </header>
   );
 }
-
-

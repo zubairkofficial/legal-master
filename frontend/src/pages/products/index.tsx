@@ -1,18 +1,32 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Check, Loader2 } from "lucide-react";
-import subscriptionService, { SubscriptionPlan, Subscription } from '@/services/subscription.service';
-import PaymentMethodModal from '@/components/payment/PaymentMethodModal';
+import subscriptionService, {
+  SubscriptionPlan,
+  Subscription,
+} from "@/services/subscription.service";
+import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { useToast } from "@/components/ui/use-toast";
-import useUserStore from '@/store/useUserStore';
+import useUserStore from "@/store/useUserStore";
+import chatService from "@/services/chat.service";
 
 export default function Products() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
+    null
+  );
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null);
+  const [activeSubscription, setActiveSubscription] =
+    useState<Subscription | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const { toast } = useToast();
   const { user } = useUserStore();
@@ -24,20 +38,21 @@ export default function Products() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Load plans and active subscription in parallel
       const [plansData, activeSubData] = await Promise.all([
         subscriptionService.getAllPlans(),
-        subscriptionService.getUserActiveSubscription()
+        subscriptionService.getUserActiveSubscription(),
       ]);
-      
+
       setPlans(plansData);
       setActiveSubscription(activeSubData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("Error loading data:", error);
       toast({
         title: "Error",
-        description: "Failed to load subscription data. Please try again later.",
+        description:
+          "Failed to load subscription data. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -58,12 +73,15 @@ export default function Products() {
       // Process the payment using the selected payment method
       await subscriptionService.processPayment({
         amount: Number(selectedPlan.price),
-        currency: 'USD',
+        currency: "USD",
         sourceId: paymentMethodId, // This still uses stored payment methods IDs
         creditAmount: selectedPlan.creditAmount,
         planId: selectedPlan.id,
       });
 
+      // Update user credits in store
+      const updatedCredits = await chatService.fetchUserCredits();
+      useUserStore.getState().updateUser({ credits: updatedCredits });
 
       toast({
         title: "Success",
@@ -72,12 +90,13 @@ export default function Products() {
 
       setShowPaymentModal(false);
       setSelectedPlan(null);
-      
+
       // Reload active subscription data
-      const activeSubData = await subscriptionService.getUserActiveSubscription();
+      const activeSubData =
+        await subscriptionService.getUserActiveSubscription();
       setActiveSubscription(activeSubData);
     } catch (error) {
-      console.error('Error processing subscription:', error);
+      console.error("Error processing subscription:", error);
       toast({
         title: "Error",
         description: "Failed to process subscription. Please try again.",
@@ -88,10 +107,9 @@ export default function Products() {
     }
   };
 
-  
   const handleCancelSubscription = async () => {
     if (!activeSubscription) return;
-    
+
     try {
       setProcessingPayment(true);
       await subscriptionService.cancelSubscription(activeSubscription.id);
@@ -99,12 +117,13 @@ export default function Products() {
         title: "Success",
         description: "Your subscription has been cancelled successfully.",
       });
-      
+
       // Reload active subscription data
-      const activeSubData = await subscriptionService.getUserActiveSubscription();
+      const activeSubData =
+        await subscriptionService.getUserActiveSubscription();
       setActiveSubscription(activeSubData);
     } catch (error) {
-      console.error('Error cancelling subscription:', error);
+      console.error("Error cancelling subscription:", error);
       toast({
         title: "Error",
         description: "Failed to cancel subscription. Please try again.",
@@ -116,12 +135,16 @@ export default function Products() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   if (activeSubscription) {
     const activePlan = activeSubscription.plan;
-    
+
     return (
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
@@ -133,26 +156,45 @@ export default function Products() {
               You are currently subscribed to our service
             </p>
           </div>
-          
+
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>{activePlan?.name || 'Active Plan'}</CardTitle>
-              <CardDescription>{activePlan?.description || 'Your current subscription'}</CardDescription>
+              <CardTitle>{activePlan?.name || "Active Plan"}</CardTitle>
+              <CardDescription>
+                {activePlan?.description || "Your current subscription"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <span className="text-3xl font-bold">${activePlan?.price ? ((activePlan.price/ 100)).toFixed(2) : '0.00'}</span>
-                <span className="text-muted-foreground">/{activePlan?.interval || 'month'}</span>
+                <span className="text-3xl font-bold">
+                  $
+                  {activePlan?.price
+                    ? (activePlan.price / 100).toFixed(2)
+                    : "0.00"}
+                </span>
+                <span className="text-muted-foreground">
+                  /{activePlan?.interval || "month"}
+                </span>
               </div>
-              
+
               <div className="space-y-2">
-                <p><strong>Status:</strong> {activeSubscription.status}</p>
-                <p><strong>Start Date:</strong> {new Date(activeSubscription.startDate).toLocaleDateString()}</p>
+                <p>
+                  <strong>Status:</strong> {activeSubscription.status}
+                </p>
+                <p>
+                  <strong>Start Date:</strong>{" "}
+                  {new Date(activeSubscription.startDate).toLocaleDateString()}
+                </p>
                 {activeSubscription.nextBillingDate && (
-                  <p><strong>Next Billing:</strong> {new Date(activeSubscription.nextBillingDate).toLocaleDateString()}</p>
+                  <p>
+                    <strong>Next Billing:</strong>{" "}
+                    {new Date(
+                      activeSubscription.nextBillingDate
+                    ).toLocaleDateString()}
+                  </p>
                 )}
               </div>
-              
+
               {activePlan?.features && (
                 <div>
                   <h3 className="font-semibold mb-2">Features</h3>
@@ -168,8 +210,8 @@ export default function Products() {
               )}
             </CardContent>
             <CardFooter>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 onClick={handleCancelSubscription}
                 className="w-full"
                 disabled={processingPayment}
@@ -185,27 +227,40 @@ export default function Products() {
               </Button>
             </CardFooter>
           </Card>
-          
+
           <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2">Want to change your plan?</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Want to change your plan?
+            </h3>
             <p className="text-sm text-muted-foreground mb-4">
               You can cancel your current plan and choose a new one below
             </p>
           </div>
         </div>
-        
+
         <div className="max-w-7xl mx-auto mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {plans.map((plan) => (
-              <Card key={plan.id} className={`relative ${activeSubscription.planId === plan.id ? 'border-[#BB8A28] border-2' : ''}`}>
+              <Card
+                key={plan.id}
+                className={`relative ${
+                  activeSubscription.planId === plan.id
+                    ? "border-[#BB8A28] border-2"
+                    : ""
+                }`}
+              >
                 <CardHeader>
                   <CardTitle>{plan.name}</CardTitle>
                   <CardDescription>{plan.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <span className="text-3xl font-bold">${((plan.price/ 100)).toFixed(2)}</span>
-                    <span className="text-muted-foreground">/{plan.interval}</span>
+                    <span className="text-3xl font-bold">
+                      ${(plan.price / 100).toFixed(2)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      /{plan.interval}
+                    </span>
                   </div>
                   <ul className="space-y-2">
                     {plan.features.map((feature, i) => (
@@ -220,15 +275,19 @@ export default function Products() {
                   <Button
                     className="w-full bg-[#BB8A28] hover:bg-[#A07923]"
                     onClick={() => handleGetStarted(plan)}
-                    disabled={activeSubscription.planId === plan.id || processingPayment}
+                    disabled={
+                      activeSubscription.planId === plan.id || processingPayment
+                    }
                   >
                     {processingPayment && selectedPlan?.id === plan.id ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Processing...
                       </>
+                    ) : activeSubscription.planId === plan.id ? (
+                      "Current Plan"
                     ) : (
-                      activeSubscription.planId === plan.id ? 'Current Plan' : 'Switch to this Plan'
+                      "Switch to this Plan"
                     )}
                   </Button>
                 </CardFooter>
@@ -261,8 +320,12 @@ export default function Products() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <span className="text-3xl font-bold">${((plan.price/ 100)).toFixed(2)}</span>
-                  <span className="text-muted-foreground">/{plan.interval}</span>
+                  <span className="text-3xl font-bold">
+                    ${(plan.price / 100).toFixed(2)}
+                  </span>
+                  <span className="text-muted-foreground">
+                    /{plan.interval}
+                  </span>
                 </div>
                 <ul className="space-y-2">
                   {plan.features.map((feature, i) => (
@@ -312,4 +375,4 @@ export default function Products() {
       )}
     </section>
   );
-} 
+}
