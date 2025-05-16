@@ -3,7 +3,7 @@ import { Button } from "../../../components/ui/button";
 
 export default function Hero() {
   return (
-    <section id="hero" className="py-20 md:py-32 bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
+    <section id="hero" className="py-12 md:py-16 bg-gradient-to-b from-background to-background/80 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-[#BB8A28]/5 via-transparent to-transparent"></div>
       

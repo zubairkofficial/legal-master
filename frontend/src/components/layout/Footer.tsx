@@ -63,14 +63,14 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#contact"
+                  href="#testimonials"
                   onClick={(e) => {
                     e.preventDefault();
-                    scrollToSection("contact");
+                    scrollToSection("testimonials");
                   }}
                   className="text-muted-foreground hover:text-[#BB8A28] transition"
                 >
-                  Contact
+                  Reviews
                 </a>
               </li>
             </ul>

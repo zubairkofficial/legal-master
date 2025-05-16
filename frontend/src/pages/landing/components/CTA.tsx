@@ -1,10 +1,12 @@
 import { Button } from "../../../components/ui/button";
 import { cn } from "../../../lib/utils";
+import { useNavigate } from "react-router-dom";
 
 export default function CTA() {
+  const navigate = useNavigate();
   
   return (
-    <section className="py-12 sm:py-16 md:py-24 bg-background">
+    <section className="py-12 sm:py-16 md:py-16 bg-background">
       <div className="container mx-auto px-4">
         <div className="bg-gradient-to-r from-[#BB8A28]/90 to-[#BB8A28] rounded-xl sm:rounded-2xl p-6 sm:p-8 md:p-12 shadow-xl relative overflow-hidden">
           {/* Background pattern */}
@@ -28,6 +30,9 @@ export default function CTA() {
                 className={cn(
                   "bg-white text-[#BB8A28] hover:bg-white/90 w-full sm:w-auto",
                 )}
+                onClick={() => {
+                  navigate("/sign-in");
+                }}
               >
                 Try Now
               </Button>
@@ -35,6 +40,9 @@ export default function CTA() {
                 className={cn(
                   "bg-transparent border-2 border-white text-white hover:bg-white/10 w-full sm:w-auto",
                 )}
+                onClick={() => {
+                  navigate("/sign-up");
+                }}
               >
                 Create Account
               </Button>

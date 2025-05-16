@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "../../../components/ui/card";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const pricingPlans = [
   {
@@ -51,8 +52,10 @@ const pricingPlans = [
 ];
 
 export default function Pricing() {
+  const navigate = useNavigate();
+
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-background">
+    <section id="pricing" className="py-12 md:py-16 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
@@ -113,6 +116,9 @@ export default function Pricing() {
                     plan.featured ? "bg-[#BB8A28] hover:bg-[#A07923]" : ""
                   }`}
                   variant={plan.featured ? "default" : "outline"}
+                  onClick={() => {
+                    navigate("/sign-in");
+                  }}
                 >
                   Get Started
                 </Button>
