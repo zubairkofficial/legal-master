@@ -82,9 +82,8 @@ const Chat = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   // Changed from string to Question type to store full question object
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
-    null
-  );
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [customQuestion, setCustomQuestion] = useState("");
   const [questionResponses, setQuestionResponses] = useState<
     ChatQuestionResponse[]
   >([]);
@@ -323,12 +322,12 @@ const Chat = () => {
   };
 
   const handleQuestionSubmit = () => {
-    if (!selectedQuestion) return;
+    if (!selectedQuestion && !customQuestion.trim()) return;
 
-    // Create response for the selected question
+    // Create response for either selected or custom question
     const response = {
-      questionId: selectedQuestion.id,
-      question: selectedQuestion.content,
+      questionId: selectedQuestion?.id || 'custom',
+      question: selectedQuestion?.content || customQuestion.trim(),
     };
 
     setQuestionResponses([response]);
@@ -646,9 +645,9 @@ const Chat = () => {
             className="container mx-auto px-4 py-8 max-w-5xl"
           >
             <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold">Select a Question</h1>
+              <h1 className="text-3xl font-bold">Select a Topic</h1>
               <p className="text-muted-foreground mt-2">
-                Choose one question relevant to your case
+                Choose a suggested question or enter your own topic
               </p>
 
               {apiError && (
@@ -662,53 +661,50 @@ const Chat = () => {
               <div className="flex justify-center py-20">
                 <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
               </div>
-            ) : questions.length > 0 ? (
-              <div className="space-y-4 mt-6">
-                {questions.map((question) => (
-                  <div
-                    key={question.id}
-                    className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
-                      selectedQuestion === question
-                        ? "bg-[#BB8A28] bg-opacity-10 border-[#BB8A28]"
-                        : "bg-card border-border"
-                    }`}
-                    onClick={() => handleQuestionSelect(question.id)}
-                  >
-                    <div className="h-2 bg-[#BB8A28]" />
-                    <div className="p-6">
-                      <div className="flex items-start">
-                        <div
-                          className={`w-6 h-6 rounded-full border mr-4 flex-shrink-0 flex items-center justify-center ${
-                            selectedQuestion === question
-                              ? "bg-[#BB8A28] border-[#BB8A28]"
-                              : "border-input"
-                          }`}
-                        >
-                          {selectedQuestion === question && (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="white"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-semibold mb-2">
+            ) : (
+              <div className="space-y-6 mt-6">
+                {/* Custom Question Input */}
+                <div className="border rounded-lg shadow-md p-6 bg-card">
+                  <h2 className="text-xl font-semibold mb-4">Or enter your own topic</h2>
+                  <input
+                    type="text"
+                    value={customQuestion}
+                    onChange={(e) => {
+                      setCustomQuestion(e.target.value);
+                      setSelectedQuestion(null); // Clear selected question when typing custom
+                    }}
+                    className="w-full p-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none"
+                    placeholder="Type your legal question or topic..."
+                  />
+                </div>
+
+                {/* Suggested Questions */}
+                {questions.length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold mb-4">Suggested Questions</h2>
+                    {questions.map((question) => (
+                      <div
+                        key={question.id}
+                        className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
+                          selectedQuestion === question
+                            ? "bg-[#BB8A28] bg-opacity-10 border-[#BB8A28]"
+                            : "bg-card border-border hover:border-[#BB8A28]"
+                        }`}
+                        onClick={() => {
+                          handleQuestionSelect(question.id);
+                          setCustomQuestion(""); // Clear custom question when selecting suggested
+                        }}
+                      >
+                        <div className="h-2 bg-[#BB8A28]" />
+                        <div className="p-6">
+                          <h2 className="text-lg font-medium text-foreground">
                             {question.content}
                           </h2>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
 
                 <div className="flex justify-between pt-4">
                   <Button
@@ -721,24 +717,12 @@ const Chat = () => {
                   </Button>
                   <Button
                     onClick={handleQuestionSubmit}
-                    disabled={isLoading || !selectedQuestion}
+                    disabled={isLoading || (!selectedQuestion && !customQuestion.trim())}
                     className="px-6"
                   >
                     Next: Legal Questionnaire
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <p className="text-lg text-muted-foreground">
-                  No questions found for this category.
-                </p>
-                <Button
-                  onClick={() => setStage(ChatStage.CATEGORY_SELECTION)}
-                  className="mt-4"
-                >
-                  Go Back to Categories
-                </Button>
               </div>
             )}
           </div>

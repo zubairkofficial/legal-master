@@ -265,6 +265,15 @@ const chatService = {
     }
   },
 
+  renameChat: async (chatId: string, title: string): Promise<void> => {
+    try {
+      await api.put(`/chats/${chatId}`, { title });
+    } catch (error) {
+      console.error('Error renaming chat:', error);
+      throw error;
+    }
+  },
+
   deleteChat: async (chatId: string): Promise<void> => {
     await api.delete(`/chats/${chatId}`);
   },

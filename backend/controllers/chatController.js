@@ -1,6 +1,5 @@
 import { Chat, Message, User, Settings } from '../models/index.js';
 import { Op } from 'sequelize';
-import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 import { ChatOpenAI } from '@langchain/openai';
 
@@ -36,7 +35,7 @@ class ChatController {
 
             // Create the chat in database
             const chat = await Chat.create({
-                title,
+                title: req.body.questionResponses[0].question,
                 metadata,
                 userId
             });
@@ -106,12 +105,11 @@ class ChatController {
             - Case Description: 
             "${metadata.form?.description}"
 
-            Futher metadata: users Query: ${metadata.question[0].question}
+            This is the topic of this chat: ${metadata.question[0].question}
             
             \n${settings.systemPrompt}`
 
             let finalMessage = "";
-            let totalTokens = 0;
 
             // Call ChatOpenAI with streaming enabled
             const response = await chatModel.invoke([

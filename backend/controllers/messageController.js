@@ -154,8 +154,6 @@ class MessageController {
       });
 
       let finalMessage = "";
-      let totalTokens = 0;
-
       // Call ChatOpenAI with streaming enabled
       const response = await chatModel.invoke([
         ...formattedHistory,

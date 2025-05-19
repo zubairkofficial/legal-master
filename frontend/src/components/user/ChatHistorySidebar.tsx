@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MessageSquare, Clock, Plus, Trash2, AlertCircle } from 'lucide-react';
+import { MessageSquare, Clock, Plus, Trash2, AlertCircle, MoreVertical, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import chatService, { Chat } from '@/services/chat.service';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 
 interface ChatHistorySidebarProps {
@@ -30,6 +37,9 @@ export function ChatHistorySidebar({ collapsed = false, className }: ChatHistory
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { chatId: currentChatId } = useParams();
 
@@ -136,6 +146,53 @@ export function ChatHistorySidebar({ collapsed = false, className }: ChatHistory
     setChatToDelete(null);
   };
 
+  const handleRenameClick = (chatId: string, currentTitle: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditingChatId(chatId);
+    setEditingTitle(currentTitle);
+  };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChatId || !editingTitle.trim()) return;
+
+    const chat = chats.find(c => c.id === editingChatId);
+    if (!chat || chat.title === editingTitle.trim()) {
+      setEditingChatId(null);
+      setEditingTitle('');
+      return;
+    }
+
+    try {
+      await chatService.renameChat(editingChatId, editingTitle.trim());
+      
+      // Update the chat in the local state
+      setChats(prev => prev.map(chat => 
+        chat.id === editingChatId 
+          ? { ...chat, title: editingTitle.trim() }
+          : chat
+      ));
+      
+      toast({
+        title: "Chat renamed",
+        description: "Your chat has been successfully renamed.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to rename chat:', error);
+      toast({
+        title: "Error",
+        description: "Failed to rename the chat. Please try again.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+    
+    setEditingChatId(null);
+    setEditingTitle('');
+  };
+
   return (
     <>
       <div className={cn('flex flex-col h-full', className)}>
@@ -189,24 +246,58 @@ export function ChatHistorySidebar({ collapsed = false, className }: ChatHistory
                   {!collapsed && (
                     <>
                       <div className="flex-1 truncate">
-                        <div className="font-medium truncate">
-                          Chat {chat.id}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {formatDate(chat.createdAt)}
-                        </div>
+                        {editingChatId === chat.id ? (
+                          <form onSubmit={handleRenameSubmit} className="flex items-center gap-2">
+                            <Input
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              className="h-7 text-sm"
+                              autoFocus
+                              onBlur={handleRenameSubmit}
+                            />
+                          </form>
+                        ) : (
+                          <>
+                            <div className="font-medium truncate">
+                              {chat.title === 'Chat' ? `Chat ${chat.id}` : chat.title.charAt(0).toUpperCase() + chat.title.slice(1)}
+                            </div>
+                            <div className="flex items-center text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {formatDate(chat.createdAt)}
+                            </div>
+                          </>
+                        )}
                       </div>
                       
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                        title="Delete chat"
-                        onClick={(e: any) => handleDeleteClick(chat.id, e)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                      </Button>
+                      <DropdownMenu open={openDropdownId === chat.id} onOpenChange={(open) => {
+                        setOpenDropdownId(open ? chat.id : null);
+                      }}>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => handleRenameClick(chat.id, chat.title, e)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={(e) => handleDeleteClick(chat.id, e)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </>
                   )}
                 </Link>
