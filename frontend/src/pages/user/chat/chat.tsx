@@ -665,7 +665,7 @@ const Chat = () => {
               <div className="space-y-6 mt-6">
                 {/* Custom Question Input */}
                 <div className="border rounded-lg shadow-md p-6 bg-card">
-                  <h2 className="text-xl font-semibold mb-4">Or enter your own topic</h2>
+                  <h2 className="text-xl font-semibold mb-4">Enter your own topic</h2>
                   <input
                     type="text"
                     value={customQuestion}
@@ -681,7 +681,7 @@ const Chat = () => {
                 {/* Suggested Questions */}
                 {questions.length > 0 && (
                   <div className="space-y-4">
-                    <h2 className="text-xl font-semibold mb-4">Suggested Questions</h2>
+                    <h2 className="text-xl font-semibold mb-4">Suggested Topics</h2>
                     {questions.map((question) => (
                       <div
                         key={question.id}

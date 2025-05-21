@@ -10,7 +10,7 @@ export default function LandingPage() {
   
   return (
     <Layout>
-      <div className="min-h-screen mx-4 sm:mx-8 md:mx-12 lg:mx-20">
+      <div className="min-h-screen mx-4 sm:mx-8 md:mx-12 lg:mx-20 overflow-x-hidden">
         <Hero />
         <Services />
         <About />

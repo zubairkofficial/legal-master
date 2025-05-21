@@ -16,7 +16,6 @@ import Auth from "./components/auth";
 import ProfileSettings from "./pages/profile/ProfileSettings";
 import AdminSettings from "./pages/admin/settings";
 import NotFound from "./pages/NotFound";
-
 import SubscriptionManagement from "./pages/admin/subscription";
 import Products from "./pages/products";
 import MockTrials from "./pages/user/trial/mockTrials";

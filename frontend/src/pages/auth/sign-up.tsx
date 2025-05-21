@@ -94,7 +94,7 @@ export default function SignUp() {
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold">Create your account</h1>
             <p className="text-muted-foreground">
-              Let's with your legal journey
+              Let's begin your legal journey
             </p>
           </div>
 
