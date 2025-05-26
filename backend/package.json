@@ -21,6 +21,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cors": "^2.8.5",
+    "cron": "^4.3.0",
     "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
     "events": "^3.3.0",

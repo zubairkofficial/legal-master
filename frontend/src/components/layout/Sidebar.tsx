@@ -60,7 +60,7 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
     >
       <div className="p-4 flex items-center justify-between border-b border-border">
         {!collapsed && (
-          <Link to="/chat/new" className="flex items-center space-x-2">
+          <Link to={variant === "admin" ? "/admin/dashboard" : "/chat/new"} className="flex items-center space-x-2">
             <div className={` ${variant === "admin" ? "w-8 h-8 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold" : ""}`}>
               {variant === "admin" ? "A": ""}
             </div>

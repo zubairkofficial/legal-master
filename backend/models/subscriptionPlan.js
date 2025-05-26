@@ -27,7 +27,7 @@ export default function initSubscriptionPlanModel(sequelize) {
                 comment: 'Price in cents',
             },
             interval: {
-                type: DataTypes.ENUM( 'month', 'year'),
+                type: DataTypes.ENUM('day', 'week', 'month', 'quarter', 'year'),
                 allowNull: false,
                 defaultValue: 'month',
             },
