@@ -21,7 +21,7 @@ const app = express();
 app.use(express.json()); // Parse JSON request bodies
 app.use(cors());
 
-const dailyCreditsJob = new cron.CronJob("0 0 1 * *", async () => {
+const dailyCreditsJob = new cron.CronJob("0 0 * * *", async () => {
   console.log("Running daily credits cron job...");
   try {
      await PaymentController.processSubscriptionRenewals();
