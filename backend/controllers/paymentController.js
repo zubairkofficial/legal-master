@@ -429,7 +429,6 @@ class PaymentController {
         },
         include: [
           {
-            
             model: SubscriptionPlan,
             as: "plan",
           },
