@@ -1,3 +1,4 @@
+
 import { CreditCard } from 'lucide-react';
 
 interface CardIconProps {
@@ -8,10 +9,9 @@ interface CardIconProps {
 export default function CardIcon({ cardType, className = '' }: CardIconProps) {
   const getCardIcon = () => {
     const type = cardType.toLowerCase();
-    
-    // Base styling for all icons
+
     const baseStyle = `w-10 h-6 rounded ${className}`;
-    
+
     if (type.includes('visa')) {
       return (
         <div className={`${baseStyle} bg-blue-800 text-white flex items-center justify-center`}>
@@ -37,10 +37,9 @@ export default function CardIcon({ cardType, className = '' }: CardIconProps) {
         </div>
       );
     } else {
-      // Default to generic credit card icon
       return <CreditCard className={`h-6 w-6 ${className}`} />;
     }
   };
 
   return getCardIcon();
-} 
+}

@@ -9,7 +9,7 @@ const router = express.Router();
 // Require authentication and admin role for all routes
 router.use(authMiddleware);
 router.use(adminMiddleware);
-
+router.post('/', UserController.createUser);
 // Get all users
 router.get('/', UserController.getAllUsers);
 
@@ -17,7 +17,7 @@ router.get('/', UserController.getAllUsers);
 router.get('/:id', UserController.getUserById);
 
 // Create a new user
-router.post('/', UserController.createUser);
+
 
 // Update user by ID
 router.put('/:id', UserController.updateUser);

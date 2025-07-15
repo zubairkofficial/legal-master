@@ -9,16 +9,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Check, Loader2 } from "lucide-react";
+import api from "@/services/api";
 import subscriptionService, {
   SubscriptionPlan,
   Subscription,
 } from "@/services/subscription.service";
+
 import PaymentMethodModal from "@/components/payment/PaymentMethodModal";
 import { useToast } from "@/components/ui/use-toast";
 import useUserStore from "@/store/useUserStore";
 import chatService from "@/services/chat.service";
+import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
 export default function Products() {
+  const stripe = useStripe();
+  const elements = useElements();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(
@@ -64,37 +69,82 @@ export default function Products() {
     setSelectedPlan(plan);
     setShowPaymentModal(true);
   };
-
   const handlePaymentMethodSelect = async (paymentMethodId: string) => {
     if (!selectedPlan || !user?.id) return;
 
     try {
       setProcessingPayment(true);
-      // Process the payment using the selected payment method
-      await subscriptionService.processPayment({
+
+      const stripeCardIntent = await subscriptionService.processPayment({
         amount: Number(selectedPlan.price),
         currency: "USD",
-        sourceId: paymentMethodId, // This still uses stored payment methods IDs
+        sourceId: paymentMethodId,
         creditAmount: selectedPlan.creditAmount,
         planId: selectedPlan.id,
       });
 
-      // Update user credits in store
-      const updatedCredits = await chatService.fetchUserCredits();
-      useUserStore.getState().updateUser({ credits: updatedCredits });
+      console.log("stripeCardIntent:", stripeCardIntent);
 
-      toast({
-        title: "Success",
-        description: "Your subscription has been activated successfully!",
-      });
+      if (!stripe || !elements) {
+        toast({
+          title: "Stripe Error",
+          description: "Stripe is not initialized properly.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      setShowPaymentModal(false);
-      setSelectedPlan(null);
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        toast({
+          title: "Card Error",
+          description: "Card element not found.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Reload active subscription data
-      const activeSubData =
-        await subscriptionService.getUserActiveSubscription();
-      setActiveSubscription(activeSubData);
+      const clientSecret = stripeCardIntent.clientSecret;
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+          },
+        }
+      );
+      if (error) {
+        console.error("[Stripe confirmCardPayment error]", error);
+        toast({
+          title: "Payment Error",
+          description: error.message || "Stripe payment failed.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (paymentIntent.status === "succeeded") {
+        await api.post("/payment/confirm", {
+          paymentIntentId: paymentIntent.id,
+          creditAmount: selectedPlan.creditAmount,
+          planId: selectedPlan.id,
+        });
+
+        toast({
+          title: "Success",
+          description: "Your subscription has been activated successfully!",
+        });
+
+        // Update user credits
+        const updatedCredits = await chatService.fetchUserCredits();
+        useUserStore.getState().updateUser({ credits: updatedCredits });
+
+        setShowPaymentModal(false);
+        setSelectedPlan(null);
+
+        const activeSubData =
+          await subscriptionService.getUserActiveSubscription();
+        setActiveSubscription(activeSubData);
+      }
     } catch (error) {
       console.error("Error processing subscription:", error);
       toast({
@@ -112,21 +162,23 @@ export default function Products() {
 
     try {
       setProcessingPayment(true);
+
+      // Call API to cancel subscription
       await subscriptionService.cancelSubscription(activeSubscription.id);
+
       toast({
-        title: "Success",
-        description: "Your subscription has been cancelled successfully.",
+        title: "Subscription Cancelled",
+        description: "Your subscription has been successfully cancelled.",
       });
 
-      // Reload active subscription data
-      const activeSubData =
-        await subscriptionService.getUserActiveSubscription();
-      setActiveSubscription(activeSubData);
+      // Reload subscription state
+      const updatedSub = await subscriptionService.getUserActiveSubscription();
+      setActiveSubscription(updatedSub); // should now be null
     } catch (error) {
-      console.error("Error cancelling subscription:", error);
+      console.error("Cancel Subscription Error:", error);
       toast({
         title: "Error",
-        description: "Failed to cancel subscription. Please try again.",
+        description: "Unable to cancel your subscription. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -209,23 +261,25 @@ export default function Products() {
                 </div>
               )}
             </CardContent>
-            <CardFooter>
-              <Button
-                variant="destructive"
-                onClick={handleCancelSubscription}
-                className="w-full"
-                disabled={processingPayment}
-              >
-                {processingPayment ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Cancel Subscription"
-                )}
-              </Button>
-            </CardFooter>
+            {activeSubscription && (
+              <CardFooter>
+                <Button
+                  variant="destructive"
+                  onClick={handleCancelSubscription}
+                  className="w-full"
+                  disabled={processingPayment}
+                >
+                  {processingPayment ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Cancel Subscription"
+                  )}
+                </Button>
+              </CardFooter>
+            )}
           </Card>
 
           <div className="text-center">

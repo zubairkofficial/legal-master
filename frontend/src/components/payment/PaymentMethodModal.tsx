@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import React, { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import api from '@/services/api';
-import useUserStore from '@/store/useUserStore';
-import SquarePaymentForm from './SquarePaymentForm';
-import CardIcon from './CardIcon';
+import useUserStore from "@/store/useUserStore";
+import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import api from "@/services/api";
 
 interface PaymentMethod {
   id: string;
@@ -28,28 +31,23 @@ interface PaymentMethodModalProps {
   processingPayment?: boolean;
 }
 
-export default function PaymentMethodModal({ 
-  isOpen, 
-  onClose, 
-  onPaymentMethodSelect, 
+export default function PaymentMethodModal({
+  isOpen,
+  onClose,
+  onPaymentMethodSelect,
   onDirectPayment,
   amount,
-  processingPayment = false
+  planId,
+  processingPayment = false,
 }: PaymentMethodModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [showAddNew, setShowAddNew] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const {user} = useUserStore();
-  const [formData, setFormData] = useState({
-    userId: user?.id,
-    cardNumber: '',
-    cardholderName: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cvc: '',
-    billingAddress: ''
-  });
-  const [activeTab, setActiveTab] = useState('saved-cards');
+  const { user } = useUserStore();
+  const [activeTab, setActiveTab] = useState("direct-payment");
+  const [autoRenew, setAutoRenew] = useState(false);
+
+  const stripe = useStripe();
+  const elements = useElements();
 
   useEffect(() => {
     if (isOpen) {
@@ -65,184 +63,124 @@ export default function PaymentMethodModal({
         setShowAddNew(true);
       }
     } catch (error) {
-      console.error('Error loading payment methods:', error);
+      console.error("Error loading payment methods:", error);
     }
   };
 
-  const handleAddPaymentMethod = async () => {
+  const handleDirectPayment = async () => {
+    if (!stripe || !elements) return;
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) return;
+
+    const { error, paymentMethod } = await stripe.createPaymentMethod({
+      type: "card",
+      card: cardElement,
+      billing_details: {
+        name: user?.name || "Unknown",
+      },
+    });
+
+    if (error) {
+      console.error("Stripe createPaymentMethod error:", error);
+      return;
+    }
+
     try {
-      setLoading(true);
-       await api.post('/payment', formData);
-      await loadPaymentMethods();
-      setShowAddNew(false);
-      setFormData({
+      await api.post("/payment", {
         userId: user?.id,
-        cardNumber: '',
-        cardholderName: '',
-        expiryMonth: '',
-        expiryYear: '',
-        cvc: '',
-        billingAddress: ''
+        stripePaymentMethodId: paymentMethod.id,
+        cardholderName: user?.name || "Unknown",
+        cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
+        lastFourDigits: paymentMethod.card?.last4 || "0000",
+        expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
+        expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
+        autoReniew: autoRenew,
       });
-    } catch (error) {
-      console.error('Error adding payment method:', error);
-    } finally {
-      setLoading(false);
+
+      onPaymentMethodSelect(paymentMethod.id);
+    } catch (err) {
+      console.error("Error saving payment method to DB:", err);
     }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleAddPaymentMethod();
-  };
-
-  const handlePaymentSuccess = (paymentResult: undefined) => {
-    onDirectPayment(paymentResult);
-    onClose();
-  };
-
-  const handlePaymentError = (error: unknown) => {
-    console.error('Payment error:', error);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={processingPayment ? undefined : onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={processingPayment ? undefined : onClose}
+    >
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Make Payment</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="direct-payment" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-          {/* <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="direct-payment" disabled={processingPayment}>Pay with Card</TabsTrigger>
-            <TabsTrigger value="saved-cards" disabled={processingPayment}>Saved Cards</TabsTrigger>
-          </TabsList> */}
-          
+        <Tabs
+          defaultValue="direct-payment"
+          className="w-full"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          {/* Stripe Card Payment Tab */}
           <TabsContent value="direct-payment" className="space-y-4">
-            <SquarePaymentForm 
-              amount={amount} 
-              onPaymentSuccess={handlePaymentSuccess}
-              onPaymentError={handlePaymentError}
-              disabled={processingPayment}
-            />
-          </TabsContent>
-          
-          <TabsContent value="saved-cards">
-            {!showAddNew ? (
-              <div className="space-y-4">
-                {paymentMethods.length > 0 ? (
-                  paymentMethods.map((method) => (
-                    <Card
-                      key={method.id}
-                      className={`cursor-pointer hover:border-primary ${processingPayment ? 'opacity-70 pointer-events-none' : ''}`}
-                      onClick={() => !processingPayment && onPaymentMethodSelect(method.id)}
-                    >
-                      <CardContent className="p-4 flex items-center space-x-4">
-                        <CardIcon cardType={method.cardType} />
-                        <div>
-                          <p className="font-medium">{method.cardType} ending in {method.lastFourDigits}</p>
-                          <p className="text-sm text-muted-foreground">{method.cardholderName}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                ) : (
-                  <p className="text-center py-4 text-muted-foreground">No saved payment methods</p>
-                )}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowAddNew(true)}
-                  disabled={processingPayment}
-                >
-                  Add New Payment Method
-                </Button>
+            <div className="space-y-2">
+              <Label>Card Details</Label>
+              <div className="border p-4 rounded bg-white">
+                <CardElement options={{ hidePostalCode: true }} />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cardNumber">Card Number</Label>
-                  <Input
-                    id="cardNumber"
-                    value={formData.cardNumber}
-                    onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                    placeholder="1234 5678 9012 3456"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cardholderName">Cardholder Name</Label>
-                  <Input
-                    id="cardholderName"
-                    value={formData.cardholderName}
-                    onChange={(e) => setFormData({ ...formData, cardholderName: e.target.value })}
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="expiryMonth">Month</Label>
-                    <Input
-                      id="expiryMonth"
-                      value={formData.expiryMonth}
-                      onChange={(e) => setFormData({ ...formData, expiryMonth: e.target.value })}
-                      placeholder="MM"
-                      maxLength={2}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="expiryYear">Year</Label>
-                    <Input
-                      id="expiryYear"
-                      value={formData.expiryYear}
-                      onChange={(e) => setFormData({ ...formData, expiryYear: e.target.value })}
-                      placeholder="YY"
-                      maxLength={2}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cvc">CVC</Label>
-                    <Input
-                      id="cvc"
-                      value={formData.cvc}
-                      onChange={(e) => setFormData({ ...formData, cvc: e.target.value })}
-                      placeholder="123"
-                      maxLength={3}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="billingAddress">Billing Address</Label>
-                  <Input
-                    id="billingAddress"
-                    value={formData.billingAddress}
-                    onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
-                    placeholder="123 Main St"
-                    required
-                  />
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowAddNew(false)}
-                    disabled={loading || processingPayment}
+            </div>
+            <div className="flex items-center space-x-2 mt-2">
+              <input
+                type="checkbox"
+                id="autoRenew"
+                checked={autoRenew}
+                onChange={(e) => setAutoRenew(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <Label htmlFor="autoRenew">Enable Auto-Renew</Label>
+            </div>
+
+            <DialogFooter>
+              <Button
+                className="w-full"
+                onClick={handleDirectPayment}
+                disabled={processingPayment}
+              >
+                {processingPayment ? "Processing..." : "Pay Now"}
+              </Button>
+            </DialogFooter>
+          </TabsContent>
+
+          {/* Optional Saved Cards Section – not used unless Stripe saves them */}
+          <TabsContent value="saved-cards">
+            <div className="space-y-4">
+              {paymentMethods.length > 0 ? (
+                paymentMethods.map((method) => (
+                  <div
+                    key={method.id}
+                    className={`border rounded p-4 cursor-pointer hover:border-primary ${
+                      processingPayment ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                    onClick={() =>
+                      !processingPayment && onPaymentMethodSelect(method.id)
+                    }
                   >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading || processingPayment}>
-                    {loading ? 'Adding...' : 'Add Payment Method'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            )}
+                    <p className="font-medium">
+                      {method.cardType} ending in {method.lastFourDigits}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {method.cardholderName}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  No saved payment methods.
+                </p>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
   );
-} 
+}

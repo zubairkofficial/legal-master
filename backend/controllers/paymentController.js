@@ -4,23 +4,15 @@ import {
   User,
   Subscription,
 } from "../models/index.js";
-import { SquareClient, SquareEnvironment } from "square";
+import Stripe from "stripe";
 import "dotenv/config";
 import { Op } from "sequelize";
+import cron from "node-cron";
 
-// Use environment variables for Square credentials
-const SQUARE_ACCESS_TOKEN =
-  "EAAAl0fGitKOGZqZVGwydyJBV_JhGacnWSQXrm02jnMPZ8kf2FQ9DwtzUnNk3wYm";
-const SQUARE_ENVIRONMENT = SquareEnvironment.Sandbox;
-const SQUARE_LOCATION_ID = "LD90N71X3D44Z";
-
-const squareClient = new SquareClient({
-  environment: SQUARE_ENVIRONMENT,
-  token: SQUARE_ACCESS_TOKEN,
-});
+// Stripe setup
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 class PaymentController {
-  // Create a new subscription plan
   static async createSubscriptionPlan(req, res) {
     try {
       const { name, price, interval, description, features, creditAmount } =
@@ -28,11 +20,11 @@ class PaymentController {
 
       const subscriptionPlan = await SubscriptionPlan.create({
         name,
-        price: price * 100, // Convert to cents
+        price: price * 100,
         interval,
         description,
         features: features || [],
-        creditAmount, // Convert to cents if provided
+        creditAmount,
       });
 
       res.status(201).json({
@@ -47,8 +39,6 @@ class PaymentController {
       });
     }
   }
-
-  // Get all subscription plans
   static async getSubscriptionPlans(req, res) {
     try {
       const subscriptionPlans = await SubscriptionPlan.findAll({
@@ -67,8 +57,6 @@ class PaymentController {
       });
     }
   }
-
-  // Get a single subscription plan
   static async getSubscriptionPlan(req, res) {
     try {
       const { id } = req.params;
@@ -93,8 +81,6 @@ class PaymentController {
       });
     }
   }
-
-  // Update a subscription plan
   static async updateSubscriptionPlan(req, res) {
     try {
       const { id } = req.params;
@@ -119,12 +105,12 @@ class PaymentController {
 
       await subscriptionPlan.update({
         name,
-        price: price ? price * 100 : undefined, // Convert to cents if provided
+        price: price ? price * 100 : undefined,
         interval,
         description,
         status,
         features: features !== undefined ? features : undefined,
-        creditAmount, // Convert to cents if provided
+        creditAmount,
       });
 
       res.status(200).json({
@@ -139,8 +125,6 @@ class PaymentController {
       });
     }
   }
-
-  // Delete a subscription plan (soft delete)
   static async deleteSubscriptionPlan(req, res) {
     try {
       const { id } = req.params;
@@ -167,35 +151,10 @@ class PaymentController {
       });
     }
   }
-
-  // Add a new payment method
   static async addPaymentMethod(req, res) {
     try {
       const {
         userId,
-        cardNumber,
-        cardholderName,
-        expiryMonth,
-        expiryYear,
-        cvc,
-        billingAddress,
-      } = req.body;
-
-      // Get last 4 digits of card number
-      const lastFourDigits = cardNumber.slice(-4);
-
-      // Determine card type (basic implementation)
-      const cardType = cardNumber.startsWith("4")
-        ? "VISA"
-        : cardNumber.startsWith("5")
-        ? "MASTERCARD"
-        : cardNumber.startsWith("3")
-        ? "AMEX"
-        : "OTHER";
-
-      const paymentMethod = await PaymentMethod.create({
-        userId,
-        cardNumber,
         cardholderName,
         expiryMonth,
         expiryYear,
@@ -203,7 +162,76 @@ class PaymentController {
         billingAddress,
         lastFourDigits,
         cardType,
-        isDefault: true, // Set as default if it's the first card
+        stripePaymentMethodId,
+        autoReniew,
+      } = req.body;
+
+      if (!stripePaymentMethodId || !lastFourDigits || !cardType) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required payment method details",
+        });
+      }
+
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: "User not found",
+        });
+      }
+
+      if (!user.stripeCustomerId) {
+        return res.status(400).json({
+          success: false,
+          error: "User does not have a Stripe customer ID",
+        });
+      }
+
+      // Attach to Stripe customer
+      await stripe.paymentMethods.attach(stripePaymentMethodId, {
+        customer: user.stripeCustomerId,
+      });
+
+      // Set as default payment method on Stripe
+      await stripe.customers.update(user.stripeCustomerId, {
+        invoice_settings: {
+          default_payment_method: stripePaymentMethodId,
+        },
+      });
+
+      // Make all others non-default
+      await PaymentMethod.update(
+        { isDefault: false },
+        { where: { userId } }
+      );
+
+      // If autoReniew is true, disable it on others
+      if (autoReniew === true) {
+        await PaymentMethod.update(
+          { autoReniew: false },
+          {
+            where: {
+              userId,
+              stripePaymentMethodId: { [Op.ne]: stripePaymentMethodId },
+            },
+          }
+        );
+      }
+
+      // Save new payment method
+      const paymentMethod = await PaymentMethod.create({
+        userId,
+        cardholderName,
+        expiryMonth,
+        expiryYear,
+        cvc: cvc || null,
+        billingAddress: billingAddress || "N/A",
+        lastFourDigits,
+        cardType,
+        stripePaymentMethodId,
+        isDefault: true,
+        autoReniew: Boolean(autoReniew),
       });
 
       res.status(201).json({
@@ -219,13 +247,12 @@ class PaymentController {
     }
   }
 
-  // Get user's payment methods
   static async getUserPaymentMethods(req, res) {
     try {
       const userId = req.user.id;
       const paymentMethods = await PaymentMethod.findAll({
         where: { userId, status: true },
-        attributes: { exclude: ["cardNumber", "cvc"] }, // Don't send sensitive data
+        attributes: { exclude: ["cardNumber", "cvc"] },
       });
 
       res.status(200).json({
@@ -240,8 +267,6 @@ class PaymentController {
       });
     }
   }
-
-  // Delete a payment method (soft delete)
   static async deletePaymentMethod(req, res) {
     try {
       const { id } = req.params;
@@ -268,151 +293,122 @@ class PaymentController {
       });
     }
   }
-
-  // Process a payment using stored payment method
   static async processPayment(req, res) {
     try {
-      const { amount, currency, sourceId, creditAmount, planId } = req.body;
-      const userId = req.user.id;
-      // Create payment using Square API
-      const response = await squareClient.payments.create({
-        idempotencyKey: `${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 15)}`,
-        amountMoney: {
-          amount: BigInt(amount / 100),
-          currency: "USD",
+      const { amount, currency } = req.body;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: parseInt(amount),
+        currency: currency || "usd",
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never'
         },
-        locationId: SQUARE_LOCATION_ID,
-        sourceId: "cnon:card-nonce-ok", // The payment token from Web Payments SDK
       });
 
-      if (response.payment.status === "COMPLETED") {
-        // Convert the payment object to a plain object and stringify any BigInt values
-        const paymentData = JSON.parse(
-          JSON.stringify(response.payment, (key, value) =>
-            typeof value === "bigint" ? value.toString() : value
-          )
-        );
+      console.log("paymentIntent", paymentIntent);
 
-        // Update user's credits
-        const user = await User.findByPk(userId);
-        user.credits += parseInt(creditAmount || 0);
-        await user.save();
-
-        // If planId is provided, create a new subscription
-        if (planId) {
-          // Fetch the subscription plan
-          const plan = await SubscriptionPlan.findByPk(planId);
-
-          if (!plan) {
-            throw new Error("Subscription plan not found");
-          }
-
-          // Calculate expiration date based on plan interval
-          let expiryDate = new Date();
-          switch (plan.interval) {
-            case "day":
-              expiryDate.setDate(expiryDate.getDate() + 1);
-              break;
-            case "weekly":
-              expiryDate.setDate(expiryDate.getDate() + 7);
-              break;
-            case "monthly":
-              expiryDate.setMonth(expiryDate.getMonth() + 1);
-              break;
-            case "quarterly":
-              expiryDate.setMonth(expiryDate.getMonth() + 3);
-              break;
-            case "yearly":
-              expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-              break;
-            default:
-              expiryDate.setMonth(expiryDate.getMonth() + 1); // Default to monthly
-          }
-
-          // Check if there's an existing active subscription
-          const existingSubscription = await Subscription.findOne({
-            where: {
-              userId,
-              status: "ACTIVE",
-            },
-          });
-
-          // If there's an existing subscription, deactivate it
-          if (existingSubscription) {
-            await existingSubscription.update({ status: "INACTIVE" });
-          }
-
-          // Create a new subscription
-          const subscription = await Subscription.create({
-            userId,
-            planId,
-            startDate: new Date(),
-            endDate: expiryDate,
-            status: "ACTIVE",
-            paymentId: paymentData.id,
-            amount: amount,
-          });
-
-          // Add the subscription to the response
-          paymentData.subscription = subscription;
-        }
-
-        res.status(200).json({
-          status: "success",
-          data: paymentData,
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          error: "Payment failed",
-        });
-      }
+      return res.status(200).json({
+        success: true,
+        clientSecret: paymentIntent.client_secret,
+      });
     } catch (error) {
-      console.error("Error processing payment:", error);
+      console.error("Error creating payment intent:", error);
       res.status(500).json({
         success: false,
         error: error.message,
       });
     }
   }
+  static async confirmPayment(req, res) {
+    try {
+      const { paymentIntentId, creditAmount, planId } = req.body;
+      const userId = req.user.id;
 
-  // Get payment details
-  // static async getPayment(req, res) {
-  //     try {
-  //         const { paymentId } = req.params;
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-  //         const response = await squareClient.payments.getPayment(paymentId);
+      if (paymentIntent.status !== "succeeded") {
+        return res.status(400).json({
+          success: false,
+          error: "Payment not completed successfully.",
+        });
+      }
 
-  //         res.status(200).json({
-  //             success: true,
-  //             data: response.result.payment
-  //         });
-  //     } catch (error) {
-  //         console.error('Error fetching payment:', error);
-  //         res.status(500).json({
-  //             success: false,
-  //             error: error.message
-  //         });
-  //     }
-  // }
+      const user = await User.findByPk(userId);
+      user.credits += parseInt(creditAmount || 0);
+      await user.save();
 
-  // List all payments for a customer
+      const paymentData = {
+        id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        status: paymentIntent.status,
+        currency: paymentIntent.currency,
+      };
+
+      if (planId) {
+        const plan = await SubscriptionPlan.findByPk(planId);
+        if (!plan) throw new Error("Subscription plan not found");
+
+        let expiryDate = new Date();
+        switch (plan.interval) {
+          case "day": expiryDate.setDate(expiryDate.getDate() + 1); break;
+          case "week": expiryDate.setDate(expiryDate.getDate() + 7); break;
+          case "month": expiryDate.setMonth(expiryDate.getMonth() + 1); break;
+          case "quarter": expiryDate.setMonth(expiryDate.getMonth() + 3); break;
+          case "year": expiryDate.setFullYear(expiryDate.getFullYear() + 1); break;
+          default: expiryDate.setMonth(expiryDate.getMonth() + 1);
+        }
+
+        const existingSubscription = await Subscription.findOne({
+          where: { userId, status: "ACTIVE" },
+        });
+
+        if (existingSubscription) {
+          await existingSubscription.update({ status: "INACTIVE" });
+        }
+
+        const subscription = await Subscription.create({
+          userId,
+          planId,
+          startDate: new Date(),
+          endDate: expiryDate,
+          status: "ACTIVE",
+          paymentId: paymentIntent.id,
+          amount: paymentIntent.amount,
+        });
+
+        paymentData.subscription = subscription;
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: paymentData,
+      });
+
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
   static async listCustomerPayments(req, res) {
     try {
       const { customerId } = req.params;
       const { beginTime, endTime } = req.query;
 
-      const response = await squareClient.payments.listPayments({
-        customerId,
-        beginTime,
-        endTime,
+      const payments = await stripe.paymentIntents.list({
+        customer: customerId,
+        created: {
+          gte: new Date(beginTime).getTime() / 1000,
+          lte: new Date(endTime).getTime() / 1000,
+        },
       });
 
       res.status(200).json({
         success: true,
-        data: response.payments || [],
+        data: payments.data || [],
       });
     } catch (error) {
       console.error("Error listing customer payments:", error);
@@ -422,8 +418,6 @@ class PaymentController {
       });
     }
   }
-
-  // Get active subscription for a user
   static async getUserActiveSubscription(req, res) {
     try {
       const userId = req.user.id || req.params.userId;
@@ -453,8 +447,6 @@ class PaymentController {
       });
     }
   }
-
-  // Get all subscriptions
   static async getAllSubscriptions(req, res) {
     try {
       const subscriptions = await Subscription.findAll({
@@ -479,18 +471,15 @@ class PaymentController {
       });
     }
   }
-
-  // Cancel a subscription
   static async cancelSubscription(req, res) {
     try {
       const { id } = req.params;
       const userId = req.user.id;
 
-      // Find the subscription
       const subscription = await Subscription.findOne({
         where: {
           id,
-          userId, // Ensure the subscription belongs to the authenticated user
+          userId,
         },
       });
 
@@ -501,7 +490,6 @@ class PaymentController {
         });
       }
 
-      // Check if it's already cancelled
       if (subscription.status === "CANCELLED") {
         return res.status(400).json({
           success: false,
@@ -509,10 +497,9 @@ class PaymentController {
         });
       }
 
-      // Update the subscription status to CANCELLED
       await subscription.update({
         status: "CANCELLED",
-        endDate: new Date(), // Set the end date to today
+        endDate: new Date(),
       });
 
       res.status(200).json({
@@ -529,129 +516,116 @@ class PaymentController {
     }
   }
 
-  // Check and process subscription renewals
   static async processSubscriptionRenewals() {
     try {
-      // Find all active subscriptions that are about to expire (within 24 hours)
-      const expiringSubscriptions = await Subscription.findAll({
+      const now = new Date();
+      const subscriptions = await Subscription.findAll({
         where: {
           status: "ACTIVE",
-          endDate: {
-            [Op.lt]: new Date(Date.now() + 24 * 60 * 60 * 1000), // Expiring within 24 hours
-            [Op.gt]: new Date(), // Not expired yet
-          },
+          endDate: { [Op.gt]: now },
         },
         include: [
-          {
-            model: User,
-            as: "user",
-          },
-          {
-            model: SubscriptionPlan,
-            as: "plan",
-          },
+          { model: User, as: "user" },
+          { model: SubscriptionPlan, as: "plan" },
         ],
       });
 
-      for (const subscription of expiringSubscriptions) {
-        try {
-          // Get the user's default payment method
-          const paymentMethod = await PaymentMethod.findOne({
-            where: {
-              userId: subscription.userId,
-              isDefault: true,
-            },
-          });
+      for (const subscription of subscriptions) {
+        const timeRemainingMs = new Date(subscription.endDate) - now;
+        const timeRemainingHrs = Math.floor(timeRemainingMs / (1000 * 60 * 60));
+        const timeRemainingDays = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
 
-          if (!paymentMethod) {
-            // No payment method found, mark subscription as expired
-            await subscription.update({
-              status: "EXPIRED",
-              endDate: new Date(),
-            });
-            continue;
-          }
-
-          // Process payment using Square
-          const response = await squareClient.payments.create({
-            idempotencyKey: `${Date.now()}-${Math.random()
-              .toString(36)
-              .substring(2, 15)}`,
-            amountMoney: {
-              amount: BigInt(subscription.plan.price),
-              currency: "USD",
-            },
-            locationId: SQUARE_LOCATION_ID,
-            sourceId: "cnon:card-nonce-ok",
-          });
-
-          if (response.payment.status === "COMPLETED") {
-            // Calculate new expiry date
-            let newExpiryDate = new Date();
-            switch (subscription.plan.interval) {
-              case "day":
-                newExpiryDate.setDate(newExpiryDate.getDate() + 1);
-                break;
-              case "week":
-                newExpiryDate.setDate(newExpiryDate.getDate() + 7);
-                break;
-              case "month":
-                newExpiryDate.setMonth(newExpiryDate.getMonth() + 1);
-                break;
-              case "quarter":
-                newExpiryDate.setMonth(newExpiryDate.getMonth() + 3);
-                break;
-              case "year":
-                newExpiryDate.setFullYear(newExpiryDate.getFullYear() + 1);
-                break;
-              default:
-                newExpiryDate.setMonth(newExpiryDate.getMonth() + 1);
-            }
-
-            // Update user's credits
-            await subscription.user.update({
-              credits: subscription.plan.creditAmount,
-            });
-
-            // Create new subscription period
-            await subscription.update({
-              startDate: new Date(),
-              endDate: newExpiryDate,
-              status: "ACTIVE",
-            });
-          } else {
-            // Payment failed, mark subscription as expired
-            await subscription.update({
-              status: "EXPIRED",
-              endDate: new Date(),
-            });
-
-            // Reset user credits
-            await subscription.user.update({
-              credits: 0,
-            });
-          }
-        } catch (error) {
-          console.error(
-            `Error processing renewal for subscription ${subscription.id}:`,
-            error
-          );
-          // Mark subscription as expired on error
+        if (timeRemainingMs <= 0) {
+          console.log(`Subscription ${subscription.id} already expired`);
           await subscription.update({
             status: "EXPIRED",
             endDate: new Date(),
           });
+          await subscription.user.update({ credits: 0 });
+          continue;
+        }
 
-          // Reset user credits
-          await subscription.user.update({
-            credits: 0,
+
+        const paymentMethod = await PaymentMethod.findOne({
+          where: {
+            userId: subscription.userId,
+            isDefault: true,
+            autoReniew: true,
+          },
+        });
+
+        if (!paymentMethod) {
+          console.log(`No default payment method for user ${subscription.userId}`);
+          await subscription.update({ status: "EXPIRED", endDate: new Date() });
+          await subscription.user.update({ credits: 0 });
+          continue;
+        }
+
+        try {
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: parseInt(subscription.plan.price),
+            currency: "usd",
+            customer: subscription.user.stripeCustomerId,
+            payment_method: paymentMethod.stripePaymentMethodId,
+            off_session: true,
+            confirm: true,
+            automatic_payment_methods: {
+              enabled: true,
+              allow_redirects: 'never',
+            }
           });
+
+          if (paymentIntent.status === "succeeded") {
+            const planInterval = subscription.plan.interval;
+            let startDate = new Date();
+            let endDate = new Date(startDate);
+
+            switch (subscription.plan.interval) {
+              case 'day': endDate.setDate(endDate.getDate() + 1); break;
+              case 'week': endDate.setDate(endDate.getDate() + 7); break;
+              case 'month': endDate.setMonth(endDate.getMonth() + 1); break;
+              case 'quarter': endDate.setMonth(endDate.getMonth() + 3); break;
+              case 'year': endDate.setFullYear(endDate.getFullYear() + 1); break;
+              default: endDate.setMonth(endDate.getMonth() + 1);
+            }
+
+            await subscription.user.update({
+              credits: subscription.plan.creditAmount,
+            });
+
+            await subscription.update({
+              startDate,
+              endDate,
+              lastBillingDate: startDate,
+              nextBillingDate: endDate,
+              status: "ACTIVE",
+            });
+
+            console.log(`Renewed subscription ${subscription.id} (${planInterval})`);
+          }
+          else {
+            console.log(`Payment failed for subscription ${subscription.id}`);
+            await subscription.update({ status: "EXPIRED", endDate: new Date() });
+            await subscription.user.update({ credits: 0 });
+          }
+        } catch (error) {
+          console.error(`Error renewing subscription ${subscription.id}:`, error.message);
+          await subscription.update({ status: "EXPIRED", endDate: new Date() });
+          await subscription.user.update({ credits: 0 });
         }
       }
     } catch (error) {
-      console.error("Error in subscription renewal process:", error);
+      console.error("Error in subscription renewal process:", error.message);
     }
   }
+
 }
 
-export default PaymentController;
+cron.schedule("* * * * *", async () => {
+  console.log("Running subscription renewal check every minute...");
+  await PaymentController.processSubscriptionRenewals();
+});
+
+
+
+export default PaymentController; 

@@ -22,6 +22,7 @@ import MockTrials from "./pages/user/trial/mockTrials";
 import TrialAnalysis from "./pages/user/trial/trialAnalysis";
 import TrialHistory from "./pages/user/trial/trialHistory";
 import TrialsPage from "./pages/admin/trials";
+import ProductsWithStripe from "./pages/products/ProductsWithStripe";
 
 const router = createBrowserRouter([
 
@@ -116,7 +117,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "products",
-                element: <Products />
+                element: <ProductsWithStripe />
             }
         ]
     },
