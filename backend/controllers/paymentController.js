@@ -496,7 +496,9 @@ class PaymentController {
           error: "Subscription is already cancelled",
         });
       }
-await User.update({ credits: 0 });
+      const user = await User.findOne({ where: { id:userId} });
+
+await user.update({ credits: 0 });
       await subscription.update({
         status: "CANCELLED",
         endDate: new Date(),
