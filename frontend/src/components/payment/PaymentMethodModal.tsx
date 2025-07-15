@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,13 +35,10 @@ export default function PaymentMethodModal({
   isOpen,
   onClose,
   onPaymentMethodSelect,
-  onDirectPayment,
-  amount,
-  planId,
   processingPayment = false,
 }: PaymentMethodModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [showAddNew, setShowAddNew] = useState(false);
+  // const [showAddNew, setShowAddNew] = useState(false);
   const { user } = useUserStore();
   const [activeTab, setActiveTab] = useState("direct-payment");
   const [autoRenew, setAutoRenew] = useState(false);
@@ -60,7 +57,7 @@ export default function PaymentMethodModal({
       const response = await api.get(`/payment`);
       setPaymentMethods(response.data.data || []);
       if (response.data.data?.length === 0) {
-        setShowAddNew(true);
+        // setShowAddNew(true);
       }
     } catch (error) {
       console.error("Error loading payment methods:", error);
