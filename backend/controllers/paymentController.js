@@ -496,7 +496,7 @@ class PaymentController {
           error: "Subscription is already cancelled",
         });
       }
-
+await User.update({ credits: 0 });
       await subscription.update({
         status: "CANCELLED",
         endDate: new Date(),
