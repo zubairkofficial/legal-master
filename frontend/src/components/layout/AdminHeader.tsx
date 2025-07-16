@@ -24,13 +24,10 @@ interface AdminHeaderProps {
 export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
   const user = useUserStore((state) => state.user);
   const credits = useUserStore((state) => state.user?.credits);
-  const updateUser = useUserStore((state) => state.updateUser);
   
   const navigate = useNavigate();
   const { clearUser } = useUserStore();
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
-
-
 
   const handleLogout = () => {
     // Clear user data from store
@@ -43,7 +40,7 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
     try {
       const credits = await chatService.fetchUserCredits();
       if (user) {
-        updateUser({ credits });
+        useUserStore.getState().updateUser({ credits });
       }
     } catch (error) {
       console.error("Error fetching credits:", error);
@@ -90,29 +87,29 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
 
         {/* Right side icons and profile */}
         <div className="flex items-center space-x-4">
-          {/* Credits Display - Show for both admin and user variants */}
-          <div
-            className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
-            onClick={() => setIsCreditsOpen(true)}
-          >
-            <Coins className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium text-primary">
-              {credits || 0} Credits
-            </span>
-          </div>
-          
-          {/* Mock Trials Button - Only show for user variant */}
+          {/* Credits Display - Only show for user variant */}
           {variant === "user" && (
-            <Button
-              onClick={() => navigate("/user/trial")}
-              variant="ghost"
-              className="hidden lg:flex items-center space-x-2 ml-4 hover:bg-primary/50 transition-colors duration-200"
-            >
-              <div className="flex items-center space-x-2">
-                <Scale className="h-5 w-5 text-primary" />
-                <span className="font-medium">Mock Trials</span>
+            <>
+              <div
+                className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+                onClick={() => navigate("/chat/products")}
+              >
+                <Coins className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  {credits || 0} Credits
+                </span>
               </div>
-            </Button>
+              <Button
+                onClick={() => navigate("/user/trial")}
+                variant="ghost"
+                className="hidden lg:flex items-center space-x-2 ml-4 hover:bg-primary/50 transition-colors duration-200"
+              >
+                <div className="flex items-center space-x-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Mock Trials</span>
+                </div>
+              </Button>
+            </>
           )}
 
           {/* Profile Avatar with Dropdown */}
@@ -187,10 +184,14 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
       </div>
 
       {/* Credits Popup */}
-      <CreditsPopup
-        isOpen={isCreditsOpen}
-        onClose={() => setIsCreditsOpen(false)}
-      />
+      {variant === "user" && (
+        <>
+          <CreditsPopup
+            isOpen={isCreditsOpen}
+            onClose={() => setIsCreditsOpen(false)}
+          />
+        </>
+      )}
     </header>
   );
 }
