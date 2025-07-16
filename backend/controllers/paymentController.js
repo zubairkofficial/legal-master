@@ -498,7 +498,7 @@ class PaymentController {
       }
       const user = await User.findOne({ where: { id:userId} });
 
-await user.update({ credits: 0 });
+      await user.update({ credits: 0 });
       await subscription.update({
         status: "CANCELLED",
         endDate: new Date(),
