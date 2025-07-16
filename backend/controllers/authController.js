@@ -2,21 +2,18 @@
 import { User } from '../models/index.js';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+dotenv.config();
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
 import fs from 'fs';
-// import { SquareClient, SquareEnvironment } from "square";
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2022-11-15',
+});
 
 
-// const squareClient = new SquareClient({
-//     environment: SquareEnvironment.Sandbox,
-//     token: "EAAAl0fGitKOGZqZVGwydyJBV_JhGacnWSQXrm02jnMPZ8kf2FQ9DwtzUnNk3wYm",
-// });
-
-
-dotenv.config();
 
 // Centralized Email Configuration
 // Centralized Email Configuration
@@ -37,7 +34,7 @@ const transporter = nodemailer.createTransport(emailConfig);
 
 // Base email template for consistent branding
 const getEmailTemplate = (content, buttonText, buttonUrl) => {
-    return `<!DOCTYPE html>
+        return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -224,14 +221,12 @@ class AuthController {
     //         console.error('Error creating Square customer:', error);
     //         throw new Error(`Error creating Square customer: ${error.message}`);
     //     }
-    // }
+    // }auth.controller.js
 
     static async signup(req, res) {
-
         const { name, email, password, username } = req.body;
 
         try {
-            // Check if email already exists
             const existingUserByEmail = await User.findOne({ where: { email } });
             if (existingUserByEmail) {
                 return res.status(400).json({ message: 'Email is already in use.' });
@@ -252,21 +247,23 @@ class AuthController {
                 role: 'user',
             });
 
-            // Create stripe customer
+            // Create Stripe customer and attach ID to user
             try {
                 const stripeCustomer = await stripe.customers.create({
                     name: newUser.name,
                     email: newUser.email,
                 });
+
                 await newUser.update({ stripeCustomerId: stripeCustomer.id });
-            } catch (error) {
-                console.error("Stripe customer creation failed:", error.message);
+            } catch (stripeError) {
+                console.error("❌ Stripe customer creation failed:", stripeError.message);
+                // You may decide to still continue, or return 500 if Stripe customer is required
             }
 
             // Send confirmation email
             await AuthController.sendConfirmationEmail(newUser);
 
-            // Send success response
+            // Send success response with stripeCustomerId (optional for debugging)
             res.status(201).json({
                 message: 'Signed up successfully. Please check your email for verification.',
                 user: {
@@ -276,6 +273,7 @@ class AuthController {
                     username: newUser.username,
                     isActive: newUser.isActive,
                     role: newUser.role,
+                    stripeCustomerId: newUser.stripeCustomerId || null, // Optional to include
                 },
             });
         } catch (error) {
@@ -283,6 +281,7 @@ class AuthController {
             res.status(500).json({ message: `Internal server error: ${error.message}` });
         }
     }
+
 
     static async verifyEmail(req, res) {
         const { token, email } = req.query;
