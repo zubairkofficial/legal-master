@@ -64,7 +64,10 @@ const Subscriptions: React.FC = () => {
        
       const credits =await chatService.fetchUserCredits();
       if(user){
-      useUserStore.getState().updateUser({credits})
+       useUserStore.getState().updateUser({
+      ...useUserStore.getState().user,
+      credits
+    });
     }
       setOpenDialog(false);
       setSelectedSubscription(null);
