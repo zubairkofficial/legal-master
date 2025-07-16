@@ -71,6 +71,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const { chatId } = useParams();
   const { user } = useUserStore();
+  const updateUser = useUserStore((state) => state.updateUser);
   const { theme } = useTheme();
   const messageEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -447,7 +448,7 @@ const Chat = () => {
 
       // Fetch and update user credits after sending the message
       const credits = await chatService.fetchUserCredits();
-      useUserStore.getState().updateUser({ credits });
+      updateUser({ credits });
     } catch (error) {
       console.error("Error sending message:", error);
       setApiError(

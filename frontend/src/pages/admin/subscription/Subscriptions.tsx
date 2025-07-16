@@ -32,7 +32,8 @@ const Subscriptions: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
- const user = useUserStore((state) => state.user);
+  const user = useUserStore((state) => state.user);
+  const updateUser = useUserStore((state) => state.updateUser);
  
   useEffect(() => {
     loadSubscriptions();
@@ -63,9 +64,11 @@ const Subscriptions: React.FC = () => {
       await subscriptionService.cancelSubscription(selectedSubscription.id);
        
       const credits = await chatService.fetchUserCredits();
+      
       if (user) {
-        useUserStore.getState().updateUser({ credits });
+        updateUser({ credits });
       }
+      
       setOpenDialog(false);
       setSelectedSubscription(null);
       await loadSubscriptions();

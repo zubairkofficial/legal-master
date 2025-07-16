@@ -35,6 +35,7 @@ export default function Products() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const { toast } = useToast();
   const { user } = useUserStore();
+  const updateUser = useUserStore((state) => state.updateUser);
 
   useEffect(() => {
     loadData();
@@ -136,7 +137,7 @@ export default function Products() {
 
         // Update user credits
         const updatedCredits = await chatService.fetchUserCredits();
-        useUserStore.getState().updateUser({ credits: updatedCredits });
+        updateUser({ credits: updatedCredits });
 
         setShowPaymentModal(false);
         setSelectedPlan(null);
@@ -173,7 +174,7 @@ export default function Products() {
 
       // Update user credits after cancellation
       const updatedCredits = await chatService.fetchUserCredits();
-      useUserStore.getState().updateUser({ credits: updatedCredits });
+      updateUser({ credits: updatedCredits });
 
       // Reload subscription state
       const updatedSub = await subscriptionService.getUserActiveSubscription();
