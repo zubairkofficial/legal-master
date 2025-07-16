@@ -23,6 +23,8 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
   const user = useUserStore((state) => state.user);
+  console.log("user===========",user)
+  console.count(`${user?.credits}`);
   const navigate = useNavigate();
   const { clearUser } = useUserStore();
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
