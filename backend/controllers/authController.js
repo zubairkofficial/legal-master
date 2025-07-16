@@ -17,24 +17,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 // Centralized Email Configuration
 // Centralized Email Configuration
-const emailConfig = {
+const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,
-    port: process.env.MAIL_PORT,
+    port: 587,
     secure: false,
     auth: {
         user: process.env.MAIL_USERNAME,
         pass: process.env.MAIL_PASSWORD,
     },
-};
+    tls: {
+        rejectUnauthorized: false,
+    },
+    logger: true,
+    debug: true,
+});
 
-// Create reusable transporter
-
-// Create reusable transporter
-const transporter = nodemailer.createTransport(emailConfig);
 
 // Base email template for consistent branding
 const getEmailTemplate = (content, buttonText, buttonUrl) => {
-        return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -207,21 +208,6 @@ class AuthController {
             throw new Error(`Error sending email: ${error.message}`);
         }
     }
-
-    // static async createSquareCustomer(user) {
-    //     try {
-    //         const response = await squareClient.customers.create({
-    //             idempotencyKey: crypto.randomBytes(32).toString('hex'),
-    //             givenName: user.name,
-    //             emailAddress: user.email,
-    //         });
-
-    //         return response.customer.id;
-    //     } catch (error) {
-    //         console.error('Error creating Square customer:', error);
-    //         throw new Error(`Error creating Square customer: ${error.message}`);
-    //     }
-    // }auth.controller.js
 
     static async signup(req, res) {
         const { name, email, password, username } = req.body;

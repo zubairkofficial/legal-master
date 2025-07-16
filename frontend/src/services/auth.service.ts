@@ -57,12 +57,12 @@ interface ResetPasswordRequest {
 const authService = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await api.post("/auth/login", data);
-    
+
     // Store token in localStorage for API interceptor
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
     }
-    
+
     return response.data;
   },
 
@@ -84,22 +84,22 @@ const authService = {
     const response = await api.get("/auth/profile");
     return response.data.user;
   },
-  
+
   refreshToken: async (refreshToken: string): Promise<AuthResponse> => {
     const response = await api.post("/auth/refresh", { refreshToken });
-    
+
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
     }
-    
+
     return response.data;
   },
-  
+
   updateProfile: async (data: UpdateProfileRequest): Promise<User> => {
     const response = await api.put("/auth/profile", data);
     return response.data.user;
   },
-  
+
   changePassword: async (data: ChangePasswordRequest): Promise<void> => {
     await api.post("/auth/change-password", data);
   },
@@ -107,7 +107,7 @@ const authService = {
   forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
     await api.post("/auth/forgot-password", data);
   },
-  
+
   resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
     await api.post("/auth/reset-password", data);
   },
