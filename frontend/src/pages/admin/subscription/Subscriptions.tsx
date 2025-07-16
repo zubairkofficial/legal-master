@@ -62,13 +62,10 @@ const Subscriptions: React.FC = () => {
     try {
       await subscriptionService.cancelSubscription(selectedSubscription.id);
        
-      const credits =await chatService.fetchUserCredits();
-      if(user){
-       useUserStore.getState().updateUser({
-      ...useUserStore.getState().user,
-      credits
-    });
-    }
+      const credits = await chatService.fetchUserCredits();
+      if (user) {
+        useUserStore.getState().updateUser({ credits });
+      }
       setOpenDialog(false);
       setSelectedSubscription(null);
       await loadSubscriptions();

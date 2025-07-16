@@ -23,8 +23,8 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
   const user = useUserStore((state) => state.user);
-  console.log("user===========",user)
-  console.count(`${user?.credits}`);
+  const credits = useUserStore((state) => state.user?.credits);
+  
   const navigate = useNavigate();
   const { clearUser } = useUserStore();
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
@@ -96,7 +96,7 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
               >
                 <Coins className="h-5 w-5 text-primary" />
                 <span className="text-sm font-medium text-primary">
-                  {user?.credits || 0} Credits
+                  {credits || 0} Credits
                 </span>
               </div>
               <Button

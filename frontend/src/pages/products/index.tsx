@@ -171,6 +171,10 @@ export default function Products() {
         description: "Your subscription has been successfully cancelled.",
       });
 
+      // Update user credits after cancellation
+      const updatedCredits = await chatService.fetchUserCredits();
+      useUserStore.getState().updateUser({ credits: updatedCredits });
+
       // Reload subscription state
       const updatedSub = await subscriptionService.getUserActiveSubscription();
       setActiveSubscription(updatedSub); // should now be null
