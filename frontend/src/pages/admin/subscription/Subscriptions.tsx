@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import chatService from "@/services/chat.service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ import { X } from "lucide-react";
 import subscriptionService, {
   Subscription,
 } from "../../../services/subscription.service";
+import useUserStore from "@/store/useUserStore";
 
 const Subscriptions: React.FC = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -30,7 +32,8 @@ const Subscriptions: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
-
+ const user = useUserStore((state) => state.user);
+ 
   useEffect(() => {
     loadSubscriptions();
   }, []);
@@ -60,9 +63,9 @@ const Subscriptions: React.FC = () => {
       await subscriptionService.cancelSubscription(selectedSubscription.id);
        
       const credits =await chatService.fetchUserCredits();
-      
+      if(user){
       useUserStore.getState().updateUser({credits})
-    
+    }
       setOpenDialog(false);
       setSelectedSubscription(null);
       await loadSubscriptions();
