@@ -333,7 +333,7 @@ class UserController {
                 });
             }
 
-            await user.destroy();
+            await user.destroy({ force: true });
 
             return res.status(200).json({
                 success: true,
