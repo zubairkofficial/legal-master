@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -45,30 +46,50 @@ export default function PaymentMethodModal({
 
   const stripe = useStripe();
   const elements = useElements();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
       loadPaymentMethods();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const loadPaymentMethods = async () => {
     try {
       const response = await api.get(`/payment`);
       setPaymentMethods(response.data.data || []);
-      if (response.data.data?.length === 0) {
-        // setShowAddNew(true);
-      }
+      // if (response.data.data?.length === 0) {
+      //   setShowAddNew(true);
+      // }
     } catch (error) {
-      console.error("Error loading payment methods:", error);
+      toast({
+        title: "Error",
+        description: "Error loading payment methods.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDirectPayment = async () => {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      toast({
+        title: "Stripe Not Ready",
+        description: "Please wait for Stripe to load.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const cardElement = elements.getElement(CardElement);
-    if (!cardElement) return;
+    if (!cardElement) {
+      toast({
+        title: "Card Element Not Found",
+        description: "Please enter your card details.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const { error, paymentMethod } = await stripe.createPaymentMethod({
       type: "card",
@@ -79,7 +100,35 @@ export default function PaymentMethodModal({
     });
 
     if (error) {
-      console.error("Stripe createPaymentMethod error:", error);
+      let errorMsg =
+        error.message || "There was an error processing your payment.";
+      if (
+        error.decline_code === "live_mode_test_card" ||
+        errorMsg.includes(
+          "Your card was declined. Your request was in live mode, but used a known test card."
+        )
+      ) {
+        errorMsg =
+          "Your card was declined because you used a Stripe test card in live mode. Please use a real card for live payments. See: https://stripe.com/docs/testing";
+      } else if (
+        errorMsg.includes(
+          "Your card was declined. Your request used a real card while testing"
+        )
+      ) {
+        errorMsg =
+          "Your card was declined because you used a real card in test mode. Please use a Stripe test card. See: https://stripe.com/docs/testing";
+      } else if (
+        error.type === "card_error" ||
+        error.code === "card_declined"
+      ) {
+        errorMsg =
+          "Your card was declined. Please check your card details or use a different card.";
+      }
+      toast({
+        title: "Payment Method Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -96,8 +145,15 @@ export default function PaymentMethodModal({
       });
 
       onPaymentMethodSelect(paymentMethod.id);
-    } catch (err) {
-      console.error("Error saving payment method to DB:", err);
+    } catch (err: any) {
+      toast({
+        title: "Error Saving Payment Method",
+        description:
+          err?.response?.data?.message ||
+          err?.message ||
+          "There was an error saving your payment method.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -166,6 +222,35 @@ export default function PaymentMethodModal({
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {method.cardholderName}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  No saved payment methods.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+          {/* Optional Saved Cards Section – not used unless Stripe saves them */}
+          <TabsContent value="saved-cards">
+            <div className="space-y-4">
+              {paymentMethods.length > 0 ? (
+                paymentMethods.map((method) => (
+                  <div
+                    key={method.id}
+                    className={`border rounded p-4 cursor-pointer hover:border-primary ${
+                      processingPayment ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                    onClick={() =>
+                      !processingPayment && onPaymentMethodSelect(method.id)
+                    }
+                  >
+                    <p className="font-medium">
+                      {method.cardType} ending in {method.lastFourDigits}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {method.cardholderName}{" "}
                     </p>
                   </div>
                 ))
