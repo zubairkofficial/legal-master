@@ -260,6 +260,7 @@ class AuthController {
                     isActive: newUser.isActive,
                     role: newUser.role,
                     stripeCustomerId: newUser.stripeCustomerId || null, 
+                    
                 },
             });
         } catch (error) {
