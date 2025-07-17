@@ -66,7 +66,7 @@ export default function StripePaymentForm({
       if (result.error) {
         let errorMsg =
           result.error.message || "There was an error processing your payment.";
-        if (
+        if (  
           result.error.type === "card_error" ||
           result.error.code === "card_declined"
         ) {
@@ -83,7 +83,6 @@ export default function StripePaymentForm({
       }
 
       if (result.paymentIntent?.status === "succeeded") {
-        // Step 3: Confirm credits/subscription on backend
         const confirmRes = await api.post("/payment/confirm", {
           paymentIntentId: result.paymentIntent.id,
           planId,
@@ -100,12 +99,23 @@ export default function StripePaymentForm({
         throw new Error("Payment not successful.");
       }
     } catch (error: any) {
-      console.error("Stripe payment error:", error);
+      // Show Stripe backend errors in the toaster
+      let errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "There was an error processing your payment. Please check your card details.";
+      // Special handling for Stripe test/live card error
+      if (
+        errorMsg.includes(
+          "Your card was declined. Your request used a real card while testing"
+        )
+      ) {
+        errorMsg =
+          "Your card was declined because you used a real card in test mode. Please use a Stripe test card. See: https://stripe.com/docs/testing";
+      }
       toast({
         title: "Payment Failed",
-        description:
-          error.message ||
-          "There was an error processing your payment. Please check your card details.",
+        description: errorMsg,
         variant: "destructive",
       });
       onPaymentError(error);
