@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
@@ -30,7 +29,7 @@ export default function StripePaymentForm({
   const { user } = useUserStore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-
+  // ...existing code...
   const handlePaymentSubmit = async () => {
     if (!stripe || !elements) {
       toast({
@@ -65,13 +64,27 @@ export default function StripePaymentForm({
       });
 
       if (result.error) {
-        throw new Error(result.error.message);
+        let errorMsg =
+          result.error.message || "There was an error processing your payment.";
+        if (
+          result.error.type === "card_error" ||
+          result.error.code === "card_declined"
+        ) {
+          errorMsg =
+            "Your card was declined. Please check your card details or use a different card.";
+        }
+        toast({
+          title: "Payment Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        onPaymentError(result.error);
+        return;
       }
 
       if (result.paymentIntent?.status === "succeeded") {
         // Step 3: Confirm credits/subscription on backend
         const confirmRes = await api.post("/payment/confirm", {
-          
           paymentIntentId: result.paymentIntent.id,
           planId,
           creditAmount,
@@ -79,22 +92,27 @@ export default function StripePaymentForm({
 
         onPaymentSuccess(confirmRes.data.data);
       } else {
+        toast({
+          title: "Payment Failed",
+          description: "Payment not successful.",
+          variant: "destructive",
+        });
         throw new Error("Payment not successful.");
       }
     } catch (error: any) {
       console.error("Stripe payment error:", error);
-      onPaymentError(error);
       toast({
         title: "Payment Failed",
         description:
-          error.message || "There was an error processing your payment.",
+          error.message ||
+          "There was an error processing your payment. Please check your card details.",
         variant: "destructive",
       });
+      onPaymentError(error);
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <Card className="w-full max-w-lg mx-auto">
       <CardContent className="p-6 space-y-4">
