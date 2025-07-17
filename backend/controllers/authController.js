@@ -259,7 +259,7 @@ class AuthController {
                     username: newUser.username,
                     isActive: newUser.isActive,
                     role: newUser.role,
-                    stripeCustomerId: newUser.stripeCustomerId || null, // Optional to include
+                    stripeCustomerId: newUser.stripeCustomerId || null, 
                 },
             });
         } catch (error) {
