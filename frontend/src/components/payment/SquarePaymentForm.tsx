@@ -29,7 +29,7 @@ export default function StripePaymentForm({
   const { user } = useUserStore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  // ...existing code...
+
   const handlePaymentSubmit = async () => {
     if (!stripe || !elements) {
       toast({
@@ -66,7 +66,14 @@ export default function StripePaymentForm({
       if (result.error) {
         let errorMsg =
           result.error.message || "There was an error processing your payment.";
-        if (  
+        if (
+          errorMsg.includes(
+            "Your card was declined. Your request used a real card while testing"
+          )
+        ) {
+          errorMsg =
+            "Your card was declined because you used a real card in test mode. Please use a Stripe test card. See: https://stripe.com/docs/testing";
+        } else if (
           result.error.type === "card_error" ||
           result.error.code === "card_declined"
         ) {
@@ -79,6 +86,7 @@ export default function StripePaymentForm({
           variant: "destructive",
         });
         onPaymentError(result.error);
+        setLoading(false);
         return;
       }
 
@@ -99,12 +107,10 @@ export default function StripePaymentForm({
         throw new Error("Payment not successful.");
       }
     } catch (error: any) {
-      // Show Stripe backend errors in the toaster
       let errorMsg =
         error?.response?.data?.message ||
         error?.message ||
         "There was an error processing your payment. Please check your card details.";
-      // Special handling for Stripe test/live card error
       if (
         errorMsg.includes(
           "Your card was declined. Your request used a real card while testing"
@@ -123,6 +129,7 @@ export default function StripePaymentForm({
       setLoading(false);
     }
   };
+
   return (
     <Card className="w-full max-w-lg mx-auto">
       <CardContent className="p-6 space-y-4">
