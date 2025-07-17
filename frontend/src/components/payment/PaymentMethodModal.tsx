@@ -100,33 +100,10 @@ export default function PaymentMethodModal({
     });
 
     if (error) {
-      let errorMsg =
-        error.message || "There was an error processing your payment.";
-      if (
-        error.decline_code === "live_mode_test_card" ||
-        errorMsg.includes(
-          "Your card was declined. Your request was in live mode, but used a known test card."
-        )
-      ) {
-        errorMsg =
-          "Your card was declined because you used a Stripe test card in live mode. Please use a real card for live payments. See: https://stripe.com/docs/testing";
-      } else if (
-        errorMsg.includes(
-          "Your card was declined. Your request used a real card while testing"
-        )
-      ) {
-        errorMsg =
-          "Your card was declined because you used a real card in test mode. Please use a Stripe test card. See: https://stripe.com/docs/testing";
-      } else if (
-        error.type === "card_error" ||
-        error.code === "card_declined"
-      ) {
-        errorMsg =
-          "Your card was declined. Please check your card details or use a different card.";
-      }
       toast({
         title: "Payment Method Error",
-        description: errorMsg,
+        description:
+          error.message || "There was an error processing your payment.",
         variant: "destructive",
       });
       return;

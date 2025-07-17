@@ -65,21 +65,8 @@ export default function StripePaymentForm({
 
       if (result.error) {
         let errorMsg =
-          result.error.message || "There was an error processing your payment.";
-        if (
-          errorMsg.includes(
-            "Your card was declined. Your request used a real card while testing"
-          )
-        ) {
-          errorMsg =
-            "Your card was declined because you used a real card in test mode. Please use a Stripe test card. See: https://stripe.com/docs/testing";
-        } else if (
-          result.error.type === "card_error" ||
-          result.error.code === "card_declined"
-        ) {
-          errorMsg =
-            "Your card was declined. Please check your card details or use a different card.";
-        }
+          result.error.message ||
+          "There was an error processing your payment. Please check your card details.";
         toast({
           title: "Payment Failed",
           description: errorMsg,
