@@ -23,6 +23,7 @@ function CardForm() {
   const { user, setUser } = useUserStore();
 
   const [loading, setLoading] = useState(false);
+  const [autoRenew, setAutoRenew] = useState(false);
 
   useEffect(() => {
     const checkExistingCard = async () => {
@@ -31,7 +32,7 @@ function CardForm() {
         const savedMethods = res.data.data;
 
         if (savedMethods && savedMethods.length > 0) {
-          if (user) {
+          if (user && user.isOld !== false) {
             setUser({ ...user, isOld: false });
           }
           Helpers.showToast("Card already saved, redirecting...", "success");
@@ -43,7 +44,7 @@ function CardForm() {
     };
 
     checkExistingCard();
-  }, [user, setUser, navigate]);
+  }, [navigate, setUser, user]);
 
   const handleSaveCard = async () => {
     if (!stripe || !elements) return;
@@ -68,13 +69,11 @@ function CardForm() {
         return;
       }
 
-      // Check if user already has a saved stripePaymentMethodId
       const savedRes = await api.get("/payment");
       const savedMethods = savedRes.data.data || [];
       const existingMethod = savedMethods.length > 0 ? savedMethods[0] : null;
 
       if (existingMethod) {
-        // Update existing record in DB with new payment method ID
         await api.put(`/payment/${existingMethod.id}`, {
           stripePaymentMethodId: paymentMethod.id,
           cardholderName: user?.name || "Unknown",
@@ -82,10 +81,9 @@ function CardForm() {
           lastFourDigits: paymentMethod.card?.last4 || "0000",
           expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
           expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
-          autoReniew: true,
+          autoReniew: autoRenew,
         });
       } else {
-        // Create new payment method record in DB
         await api.post("/payment", {
           userId: user?.id,
           stripePaymentMethodId: paymentMethod.id,
@@ -94,7 +92,7 @@ function CardForm() {
           lastFourDigits: paymentMethod.card?.last4 || "0000",
           expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
           expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
-          autoReniew: true,
+          autoReniew: autoRenew,
         });
       }
 
@@ -116,6 +114,20 @@ function CardForm() {
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md space-y-4">
       <h2 className="text-xl font-semibold">Save Your Payment Method</h2>
       <CardElement className="p-3 border rounded-md" />
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="autoRenew"
+          checked={autoRenew}
+          onChange={(e) => setAutoRenew(e.target.checked)}
+          className="w-4 h-4"
+        />
+        <label htmlFor="autoRenew" className="text-sm">
+          Enable Auto-Renew for this card
+        </label>
+      </div>
+
       <Button
         onClick={handleSaveCard}
         disabled={loading}
@@ -134,3 +146,9 @@ export default function SetupCard() {
     </Elements>
   );
 }
+
+
+//
+// UPDATE users
+// SET "isOld" = TRUE
+// WHERE "createdAt" < '2025-07-01';

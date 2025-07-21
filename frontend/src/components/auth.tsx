@@ -87,7 +87,7 @@ const Auth: React.FC<AuthProps> = ({
   // Redirect to card setup if the user isOld
   useEffect(() => {
     if (!loading && user && token) {
-      if ((user as any)?.isOld) {
+      if ((user as any).isOld) {
         navigate("/setup-card", { replace: true });
       } else {
         navigate("/chat/new", { replace: true });
@@ -95,7 +95,7 @@ const Auth: React.FC<AuthProps> = ({
     }
   }, [loading, token, user?.isOld, navigate]);
 
-  if (loading) return null; 
+  if (loading) return null;
 
   const getRedirectPath = (): string | null => {
     if (token && isTokenExpired(token)) {
