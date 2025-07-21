@@ -90,7 +90,7 @@ export default function initUserModel(sequelize) {
             },
             isOld: {
                 type: DataTypes.BOOLEAN,
-                defaultValue: false,
+                defaultValue: true,
             },
             verificationToken: {
                 type: DataTypes.STRING,
