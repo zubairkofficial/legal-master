@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -10,6 +10,7 @@ import {
 import { Button } from "../../components/ui/button";
 import Helpers from "../../config/helpers";
 import useUserStore from "@/store/useUserStore";
+import api from "@/services/api"; 
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
@@ -17,51 +18,52 @@ function CardForm() {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { clientSecret } = location.state || {};
   const { user, setUser } = useUserStore();
 
   const [loading, setLoading] = useState(false);
 
   const handleSaveCard = async () => {
-    if (!stripe || !elements || !clientSecret) return;
+    if (!stripe || !elements) return;
+
+    const cardElement = elements.getElement(CardElement);
+    if (!cardElement) {
+      Helpers.showToast("Card element not found", "error");
+      return;
+    }
 
     setLoading(true);
     try {
-      // Confirm card setup with Stripe
-      const result = await stripe.confirmCardSetup(clientSecret, {
-        payment_method: { card: elements.getElement(CardElement)! },
+      // Create payment method
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: "card",
+        card: cardElement,
+        billing_details: { name: user?.name || "Unknown" },
       });
 
-      if (result.error) {
-        Helpers.showToast(result.error.message || "Failed to save card", "error");
+      if (error) {
+        Helpers.showToast(error.message || "Failed to save card", "error");
         setLoading(false);
         return;
       }
 
-      // Send payment method ID to backend for saving
-      const paymentMethodId = result.setupIntent.payment_method;
-
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/payment/confirm-setup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ paymentMethodId }),
+      // Save payment method to backend
+      await api.post("/payment", {
+        userId: user?.id,
+        stripePaymentMethodId: paymentMethod.id,
+        cardholderName: user?.name || "Unknown",
+        cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
+        lastFourDigits: paymentMethod.card?.last4 || "0000",
+        expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
+        expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
+        autoReniew: true,
       });
 
-      if (!res.ok) throw new Error("Failed to save payment method");
-      await res.json();
-
-      // Update isOld to false in user store
+      // Update user state: mark isOld as false
       if (user) {
         setUser({ ...user, isOld: false });
       }
 
       Helpers.showToast("Card saved successfully!", "success");
-
-      // Redirect to chat after success
       navigate("/chat/new", { replace: true });
     } catch (err) {
       console.error("Card setup error:", err);

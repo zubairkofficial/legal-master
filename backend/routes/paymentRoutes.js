@@ -15,7 +15,7 @@ router.get("/user-subscription", PaymentController.getUserActiveSubscription);
 router.post("/check-renewals", PaymentController.processSubscriptionRenewals);
 router.post("/process", PaymentController.processPayment);
 router.post("/confirm", PaymentController.confirmPayment);
-router.post("/confirm-setup", authMiddleware, PaymentController.confirmSetupIntent);
+router.post("/confirm-setup", PaymentController.confirmSetupIntent);
 
 
 export default router;
