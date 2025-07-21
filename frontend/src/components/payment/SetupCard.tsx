@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -10,9 +10,11 @@ import {
 import { Button } from "../../components/ui/button";
 import Helpers from "../../config/helpers";
 import useUserStore from "@/store/useUserStore";
-import api from "@/services/api"; 
+import api from "@/services/api";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
+);
 
 function CardForm() {
   const stripe = useStripe();
@@ -21,6 +23,27 @@ function CardForm() {
   const { user, setUser } = useUserStore();
 
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkExistingCard = async () => {
+      try {
+        const res = await api.get("/payment");
+        const savedMethods = res.data.data;
+
+        if (savedMethods && savedMethods.length > 0) {
+          if (user) {
+            setUser({ ...user, isOld: false });
+          }
+          Helpers.showToast("Card already saved, redirecting...", "success");
+          navigate("/chat/new", { replace: true });
+        }
+      } catch (err) {
+        console.error("Error checking existing payment methods:", err);
+      }
+    };
+
+    checkExistingCard();
+  }, [user, setUser, navigate]);
 
   const handleSaveCard = async () => {
     if (!stripe || !elements) return;
@@ -33,7 +56,6 @@ function CardForm() {
 
     setLoading(true);
     try {
-      // Create payment method
       const { error, paymentMethod } = await stripe.createPaymentMethod({
         type: "card",
         card: cardElement,
@@ -46,19 +68,36 @@ function CardForm() {
         return;
       }
 
-      // Save payment method to backend
-      await api.post("/payment", {
-        userId: user?.id,
-        stripePaymentMethodId: paymentMethod.id,
-        cardholderName: user?.name || "Unknown",
-        cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
-        lastFourDigits: paymentMethod.card?.last4 || "0000",
-        expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
-        expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
-        autoReniew: true,
-      });
+      // Check if user already has a saved stripePaymentMethodId
+      const savedRes = await api.get("/payment");
+      const savedMethods = savedRes.data.data || [];
+      const existingMethod = savedMethods.length > 0 ? savedMethods[0] : null;
 
-      // Update user state: mark isOld as false
+      if (existingMethod) {
+        // Update existing record in DB with new payment method ID
+        await api.put(`/payment/${existingMethod.id}`, {
+          stripePaymentMethodId: paymentMethod.id,
+          cardholderName: user?.name || "Unknown",
+          cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
+          lastFourDigits: paymentMethod.card?.last4 || "0000",
+          expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
+          expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
+          autoReniew: true,
+        });
+      } else {
+        // Create new payment method record in DB
+        await api.post("/payment", {
+          userId: user?.id,
+          stripePaymentMethodId: paymentMethod.id,
+          cardholderName: user?.name || "Unknown",
+          cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
+          lastFourDigits: paymentMethod.card?.last4 || "0000",
+          expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
+          expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
+          autoReniew: true,
+        });
+      }
+
       if (user) {
         setUser({ ...user, isOld: false });
       }
