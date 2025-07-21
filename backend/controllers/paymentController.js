@@ -393,6 +393,59 @@ class PaymentController {
       });
     }
   }
+  static async confirmSetupIntent(req, res) {
+    try {
+      const { paymentMethodId } = req.body;
+      const userId = req.user.id;
+
+      if (!paymentMethodId) {
+        return res.status(400).json({
+          success: false,
+          error: "Payment Method ID is required.",
+        });
+      }
+
+      // Retrieve details of the saved payment method from Stripe
+      const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+      if (!pm || !pm.card) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid payment method or no card details found.",
+        });
+      }
+
+      // Save to payment_methods table
+      const savedMethod = await PaymentMethod.create({
+        userId,
+        cardNumber: "**** **** **** " + pm.card.last4, 
+        cardholderName: pm.billing_details.name || "Unknown",
+        expiryMonth: pm.card.exp_month.toString(),
+        expiryYear: pm.card.exp_year.toString(),
+        cvc: null,
+        isDefault: true,
+        lastFourDigits: pm.card.last4,
+        cardType: pm.card.brand,
+        stripePaymentMethodId: pm.id,
+      });
+
+      // Update user to indicate card setup completed
+      await User.update({ isOld: false }, { where: { id: userId } });
+
+      return res.status(200).json({
+        success: true,
+        data: savedMethod,
+        message: "Payment method saved successfully",
+      });
+    } catch (error) {
+      console.error("Error confirming setup intent:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   static async listCustomerPayments(req, res) {
     try {
       const { customerId } = req.params;
@@ -496,7 +549,7 @@ class PaymentController {
           error: "Subscription is already cancelled",
         });
       }
-      const user = await User.findOne({ where: { id:userId} });
+      const user = await User.findOne({ where: { id: userId } });
 
       await user.update({ credits: 0 });
       await subscription.update({

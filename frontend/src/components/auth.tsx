@@ -1,9 +1,8 @@
-import React, { ReactNode, useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import React, { ReactNode, useEffect, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { useNavigate } from "react-router-dom";
-import  Helpers from "@/config/helpers";
-import useUserStore from '@/store/useUserStore';
+import Helpers from "@/config/helpers";
+import useUserStore from "@/store/useUserStore";
 
 interface AuthProps {
   children: ReactNode;
@@ -16,48 +15,91 @@ const Auth: React.FC<AuthProps> = ({
   isAuth = true,
   isAdmin = false,
 }) => {
-  const { user, token } = useUserStore();
+  const { user, token, setUser, clearUser } = useUserStore();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   // Check if token is expired
   const isTokenExpired = (token: string): boolean => {
     try {
       const decoded: any = jwtDecode(token);
-      const currentTime = Date.now() / 1000;
-      return decoded.exp < currentTime;
-    } catch (error) {
+      return decoded.exp < Date.now() / 1000;
+    } catch {
       return true;
     }
   };
 
+  // Fetch the latest user data from backend
+  const fetchUser = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch user");
+      const data = await res.json();
+      setUser(data.user);
+    } catch (err) {
+      console.error("Failed to refresh user data:", err);
+      clearUser();
+      navigate("/login", { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (token) {
-      // Initial check 
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    if (isTokenExpired(token)) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      Helpers.showToast("Session expired. Please login again.", "error");
+      clearUser();
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    if (!user) {
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
+
+    const interval = setInterval(() => {
       if (isTokenExpired(token)) {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         Helpers.showToast("Session expired. Please login again.", "error");
-        navigate("/login");
-        return;
+        clearUser();
+        navigate("/login", { replace: true });
+        clearInterval(interval);
       }
+    }, 60000);
 
-      const checkInterval = setInterval(() => {
-        if (isTokenExpired(token)) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          Helpers.showToast("Session expired. Please login again.", "error");
-          navigate("/login");
-          clearInterval(checkInterval);
-        }
-      }, 60000);
+    return () => clearInterval(interval);
+  }, [token, user, navigate, clearUser, setUser]);
 
-      return () => clearInterval(checkInterval);
+  // Redirect to card setup if the user isOld
+  useEffect(() => {
+    if (!loading && user && token) {
+      if ((user as any)?.isOld) {
+        navigate("/setup-card", { replace: true });
+      } else {
+        navigate("/chat/new", { replace: true });
+      }
     }
-  }, [token, navigate]);
+  }, [loading, token, user?.isOld, navigate]);
+
+  if (loading) return null; 
 
   const getRedirectPath = (): string | null => {
     if (token && isTokenExpired(token)) {
-      useUserStore.getState().clearUser();
+      clearUser();
       Helpers.showToast("Session expired. Please login again.", "error");
       navigate("/login");
       return null;
@@ -76,12 +118,18 @@ const Auth: React.FC<AuthProps> = ({
     }
 
     if (isAdmin && user.role !== "admin") {
-      Helpers.showToast("Access denied. Only administrators can access this area.", "error");
+      Helpers.showToast(
+        "Access denied. Only administrators can access this area.",
+        "error"
+      );
       return "/chat/new";
     }
 
     if (!isAdmin && user.role === "admin") {
-      Helpers.showToast("Access denied. Please use the admin dashboard.", "error");
+      Helpers.showToast(
+        "Access denied. Please use the admin dashboard.",
+        "error"
+      );
       return "/admin/users";
     }
 

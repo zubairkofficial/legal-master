@@ -1,4 +1,4 @@
-import  { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -14,7 +14,7 @@ import {
   Users2,
   MessageSquareIcon,
   DollarSign,
-  Gavel
+  Gavel,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
@@ -40,7 +40,7 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
   ];
 
   const userLinks = [
-    { href: "/chat/new", icon: LayoutDashboard, label: "Chat" },
+    { href: "/chat/products", icon: LayoutDashboard, label: "Chat" },
     { href: "/chat/pricing", icon: Calendar, label: "Pricing" },
     { href: "/chat/history", icon: MessagesSquare, label: "History" },
     { href: "/chat/profile", icon: User, label: "Profile" },
@@ -60,14 +60,20 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
     >
       <div className="p-4 flex items-center justify-between border-b border-border">
         {!collapsed && (
-          <Link to={variant === "admin" ? "/admin/dashboard" : "/chat/new"} className="flex items-center space-x-2">
-            <div className={` ${variant === "admin" ? "w-8 h-8 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold" : ""}`}>
-              {variant === "admin" ? "A": ""}
-            </div>
-            <span className="text-lg font-semibold">
-              {variant === "admin" ? "Admin" : <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
-              }
-            </span>
+          <Link
+            to={variant === "admin" ? "/admin/dashboard" : "/chat/products"}
+            className="flex items-center space-x-2"
+          >
+            {variant === "admin" ? (
+              <div className="w-8 h-8 bg-[#BB8A28] rounded flex items-center justify-center text-white font-bold">
+                A
+              </div>
+            ) : (
+              <img src="/assets/logo.png" alt="Logo" className="w-32 h-auto" />
+            )}
+            {variant === "admin" && (
+              <span className="text-lg font-semibold">Admin</span>
+            )}
           </Link>
         )}
         {collapsed && (
@@ -123,4 +129,4 @@ export function Sidebar({ variant = "admin", className }: SidebarProps) {
       )}
     </aside>
   );
-} 
+}

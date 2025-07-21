@@ -17,6 +17,7 @@ interface User {
   role: string;
   isTwoFactorEnabled?: boolean;
   profileImage?: string;
+  isOld?: boolean;
 }
 
 interface LoginRequest {

@@ -259,8 +259,8 @@ class AuthController {
                     username: newUser.username,
                     isActive: newUser.isActive,
                     role: newUser.role,
-                    stripeCustomerId: newUser.stripeCustomerId || null, 
-                    
+                    stripeCustomerId: newUser.stripeCustomerId || null,
+
                 },
             });
         } catch (error) {
@@ -310,14 +310,14 @@ class AuthController {
     }
 
     static async signin(req, res) {
-        const { username, email, password } = req.body;
+        const { username, password } = req.body;
 
         try {
             const user = await User.findOne({
                 where: {
                     [Op.or]: [
-                        { username: username },
-                        { email: username }  // Using the username field to check against email too
+                        { username },
+                        { email: username } // allow login by username or email
                     ]
                 }
             });
@@ -335,24 +335,63 @@ class AuthController {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
-            // Generate access token
+            // Generate tokens
             const token = jwt.sign(
                 { id: user.id, email: user.email, role: user.role, username: user.username },
                 process.env.JWT_SECRET,
                 { expiresIn: '24h' }
             );
 
-            // Generate refresh token
             const refreshToken = jwt.sign(
                 { id: user.id },
                 process.env.REFRESH_TOKEN_SECRET,
                 { expiresIn: '7d' }
             );
 
-            // Save refresh token to database
             await user.update({ refreshToken });
 
-            res.status(200).json({
+            // --- Stripe Migration Check ---
+            if (!user.stripeCustomerId) {
+                try {
+                    const stripeCustomer = await stripe.customers.create({
+                        name: user.name,
+                        email: user.email,
+                    });
+
+                    await user.update({ stripeCustomerId: stripeCustomer.id, isOld: true });
+
+                    const setupIntent = await stripe.setupIntents.create({
+                        customer: stripeCustomer.id,
+                    });
+
+                    return res.status(200).json({
+                        message: 'Login successful',
+                        user: {
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            username: user.username,
+                            isActive: user.isActive,
+                            role: user.role,
+                            credits: user.credits,
+                            isTwoFactorEnabled: user.isTwoFactorEnabled,
+                            profileImage: user.profileImage,
+                            stripeCustomerId: user.stripeCustomerId,
+                            isOld: true
+                        },
+                        token,
+                        refreshToken,
+                        requiresStripeSetup: true,
+                        clientSecret: setupIntent.client_secret
+                    });
+                } catch (stripeError) {
+                    console.error('Error creating Stripe customer for old user:', stripeError.message);
+                    return res.status(500).json({ message: 'Stripe customer migration failed.' });
+                }
+            }
+
+            // Normal login response for users with stripeCustomerId
+            return res.status(200).json({
                 message: 'Login successful',
                 user: {
                     id: user.id,
@@ -363,14 +402,17 @@ class AuthController {
                     role: user.role,
                     credits: user.credits,
                     isTwoFactorEnabled: user.isTwoFactorEnabled,
-                    profileImage: user.profileImage
+                    profileImage: user.profileImage,
+                    stripeCustomerId: user.stripeCustomerId,
+                    isOld: Boolean(user.isOld),
                 },
                 token,
-                refreshToken
+                refreshToken,
+                requiresStripeSetup: false
             });
         } catch (error) {
             console.error('Error signing in:', error);
-            res.status(500).json({ message: `Internal server error: ${error.message}` });
+            return res.status(500).json({ message: `Internal server error: ${error.message}` });
         }
     }
 

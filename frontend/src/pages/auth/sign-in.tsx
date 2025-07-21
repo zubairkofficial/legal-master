@@ -12,48 +12,61 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { setUser, setToken } = useUserStore();
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       Helpers.showToast("Please fill in all fields", "error");
       return;
     }
-    
+
     try {
       setIsLoading(true);
       const response = await authService.login({
-        username: email, // could be email or username
-        password
+        username: email, // email or username
+        password,
       });
-      
-      // Store user data in zustand store
+
+      // Store user data in Zustand store
       setUser(response.user);
       setToken(response.token);
-      
-      // If "Remember Me" is checked, allow token to persist
+
       if (!rememberMe) {
-        // Set session storage flag to clear on browser close
         sessionStorage.setItem("session-only", "true");
       }
-      
+
       Helpers.showToast("You have been logged in successfully", "success");
-      
+
+      // NEW: Check if Stripe setup is required (old Square user migrated)
+      if (response.requiresStripeSetup && response.clientSecret) {
+        navigate("/setup-card", {
+          state: {
+            clientSecret: response.clientSecret,
+            stripeCustomerId: response.user.stripeCustomerId,
+          },
+        });
+        return;
+      }
+
       // Redirect based on user role
       if (response.user.role === "admin") {
         navigate("/admin/dashboard");
       } else {
-        navigate("/chat/new", { state: { stage: 'category_selection' } });
+        navigate("/chat/new", { state: { stage: "category_selection" } });
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      Helpers.showToast(error.response?.data?.message || "Invalid credentials. Please try again.", "error");
+      Helpers.showToast(
+        error.response?.data?.message ||
+          "Invalid credentials. Please try again.",
+        "error"
+      );
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex">
       {/* Decorative Side */}
@@ -65,9 +78,12 @@ export default function SignIn() {
               <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
             </Link>
           </div>
-          <h2 className="text-3xl font-bold mb-6">AI-Powered Legal Assistance at Your Fingertips</h2>
+          <h2 className="text-3xl font-bold mb-6">
+            AI-Powered Legal Assistance at Your Fingertips
+          </h2>
           <p className="mb-6 text-white/80">
-            Join thousands of legal professionals and clients who trust our platform for accurate, efficient legal services.
+            Join thousands of legal professionals and clients who trust our
+            platform for accurate, efficient legal services.
           </p>
           <div className="flex space-x-4">
             <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm"></div>
@@ -76,20 +92,21 @@ export default function SignIn() {
           </div>
         </div>
       </div>
-      
+
       {/* Form Side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8 bg-background">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex items-center justify-center space-x-2 mb-8">
-            <img src="" alt="" className="w-40 h-auto" />
-
+            <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
           </div>
-          
+
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold">Welcome back</h1>
-            <p className="text-muted-foreground">Sign in to your account to continue</p>
+            <p className="text-muted-foreground">
+              Sign in to your account to continue
+            </p>
           </div>
-          
+
           <div className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
@@ -106,13 +123,19 @@ export default function SignIn() {
                   placeholder="you@example.com"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="block text-sm font-medium">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium"
+                  >
                     Password
                   </label>
-                  <Link to="/forgot-password" className="text-sm text-[#BB8A28] hover:underline">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-[#BB8A28] hover:underline"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -126,7 +149,7 @@ export default function SignIn() {
                   placeholder="••••••••"
                 />
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -135,11 +158,14 @@ export default function SignIn() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-[#BB8A28] focus:ring-[#BB8A28] border-input rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-muted-foreground"
+                >
                   Remember me
                 </label>
               </div>
-              
+
               <Button
                 type="submit"
                 className="w-full"
@@ -149,11 +175,14 @@ export default function SignIn() {
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
-            
+
             <div className="text-center text-sm">
               <p className="text-muted-foreground">
                 Don't have an account?{" "}
-                <Link to="/sign-up" className="text-[#BB8A28] hover:underline font-medium">
+                <Link
+                  to="/sign-up"
+                  className="text-[#BB8A28] hover:underline font-medium"
+                >
                   Create account
                 </Link>
               </p>
@@ -163,4 +192,4 @@ export default function SignIn() {
       </div>
     </div>
   );
-} 
+}

@@ -52,6 +52,7 @@ v1Router.use("/credits", creditRoutes);
 v1Router.use("/trials", trialRoutes);
 v1Router.use("/admin", adminRoutes);
 
+
 app.use("/api/v1", v1Router);
 
 app.get("/api/v1/", (req, res) => {
