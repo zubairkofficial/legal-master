@@ -14,19 +14,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 
-
-// Centralized Email Configuration
 // Centralized Email Configuration
 const transporter = nodemailer.createTransport({
     host: process.env.MAIL_HOST,
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.MAIL_USERNAME,
         pass: process.env.MAIL_PASSWORD,
-    },
-    tls: {
-        rejectUnauthorized: false,
     },
     logger: true,
     debug: true,
@@ -194,7 +189,7 @@ class AuthController {
         `;
 
         const mailOptions = {
-            from: process.env.MAIL_FROM_ADDRESS,
+            from: `"Legal Master AI" <${process.env.MAIL_USERNAME}>`,
             to: user.email,
             subject: 'Verify Your Email - LEGAL MASTER AI',
             html: getEmailTemplate(emailContent, 'Verify Email Address', verificationUrl)
