@@ -233,7 +233,7 @@ class PaymentController {
         isDefault: true,
         autoReniew: Boolean(autoReniew),
       });
-
+      await user.update({ isOld: false });
       res.status(201).json({
         success: true,
         data: paymentMethod,
@@ -246,7 +246,6 @@ class PaymentController {
       });
     }
   }
-
   static async getUserPaymentMethods(req, res) {
     try {
       const userId = req.user.id;
@@ -418,7 +417,7 @@ class PaymentController {
       // Save to payment_methods table
       const savedMethod = await PaymentMethod.create({
         userId,
-        cardNumber: "**** **** **** " + pm.card.last4, 
+        cardNumber: "**** **** **** " + pm.card.last4,
         cardholderName: pm.billing_details.name || "Unknown",
         expiryMonth: pm.card.exp_month.toString(),
         expiryYear: pm.card.exp_year.toString(),
@@ -570,7 +569,6 @@ class PaymentController {
       });
     }
   }
-
   static async processSubscriptionRenewals() {
     try {
       const now = new Date();
