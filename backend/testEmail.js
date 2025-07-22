@@ -5,7 +5,7 @@ dotenv.config();
 const transporter = nodemailer.createTransport({
   host: process.env.MAIL_HOST,
   port: 465,
-  secure: false,
+  secure: true,
   auth: {
     user: process.env.MAIL_USERNAME,
     pass: process.env.MAIL_PASSWORD,
@@ -21,11 +21,12 @@ transporter.verify()
   .then(() => {
     console.log("✅ SMTP Verified");
     return transporter.sendMail({
-      from: process.env.MAIL_FROM_ADDRESS,
+      from: `"Legal Master AI" <${process.env.MAIL_USERNAME}>`, 
       to: "your_test_email@gmail.com",
       subject: "Test Email",
       text: "This is a test email from Legal Master",
     });
+
   })
   .then(() => console.log("✅ Email sent"))
   .catch(err => console.error("❌ Send failed:", err));
