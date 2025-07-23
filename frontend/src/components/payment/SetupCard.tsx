@@ -27,7 +27,7 @@ const cardStyle = {
     },
     invalid: { color: "#e53e3e" },
   },
-  hidePostalCode: true, // removes postal code
+  hidePostalCode: true,
 };
 
 function CardForm() {
@@ -37,7 +37,6 @@ function CardForm() {
   const { user, setUser } = useUserStore();
 
   const [loading, setLoading] = useState(false);
-
   const [toastShown, setToastShown] = useState(false);
 
   useEffect(() => {
@@ -45,9 +44,7 @@ function CardForm() {
       try {
         const res = await api.get("/payment");
         if (res.data?.data?.length > 0 && !toastShown) {
-          if (user) {
-            setUser({ ...user, isOld: false });
-          }
+          if (user) setUser({ ...user, isOld: false });
           setToastShown(true);
           Helpers.showToast("Card already saved, redirecting...", "success");
           navigate("/chat/new", { replace: true });
@@ -56,12 +53,12 @@ function CardForm() {
         console.error("Error checking existing payment methods:", err);
       }
     };
-
     checkExistingCard();
   }, [navigate, setUser, user, toastShown]);
 
   const handleSaveCard = async () => {
     if (!stripe || !elements) return;
+
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
       Helpers.showToast("Card element not found", "error");
@@ -69,7 +66,10 @@ function CardForm() {
     }
 
     setLoading(true);
+    Helpers.showToast("Saving your card, please wait...", "info"); // Instant feedback
+
     try {
+      // 1. Create Stripe Payment Method
       const { error, paymentMethod } = await stripe.createPaymentMethod({
         type: "card",
         card: cardElement,
@@ -81,7 +81,8 @@ function CardForm() {
         return;
       }
 
-      await api.post("/payment", {
+      // 2. Save to backend in background (no blocking UI)
+      const savePromise = api.post("/payment", {
         userId: user?.id,
         stripePaymentMethodId: paymentMethod.id,
         cardholderName: user?.name || "Unknown",
@@ -91,10 +92,16 @@ function CardForm() {
         expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
       });
 
+      // 3. Update UI immediately
       if (user) setUser({ ...user, isOld: false });
-
       Helpers.showToast("Card saved successfully!", "success");
       navigate("/chat/new", { replace: true });
+
+      // 4. Wait for backend to finish quietly
+      savePromise.catch((err) => {
+        console.error("Card save error:", err);
+        Helpers.showToast("Error saving card to server", "error");
+      });
     } catch (err) {
       console.error("Card setup error:", err);
       Helpers.showToast("Error saving card", "error");
@@ -104,19 +111,19 @@ function CardForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+    <div
+      className="max-w-md mx-auto mt-12 p-8 bg-white rounded-xl shadow-lg border border-gray-200"
+      style={{ fontFamily: "TikTok Sans, sans-serif" }}
+    >
       <h2 className="text-xl font-semibold mb-6 text-gray-900 text-center">
         Save Your Card
       </h2>
-
       <p className="text-sm text-gray-500 mb-6 text-center">
         Add your card details securely. No charges will be made.
       </p>
-
-      <div className="p-4 border rounded-md  focus-within:ring-2 focus-within:ring-[#BB8A28] transition-all">
+      <div className="p-4 border rounded-md focus-within:ring-2 focus-within:ring-[#BB8A28] transition-all">
         <CardElement options={cardStyle} />
       </div>
-
       <Button
         onClick={handleSaveCard}
         disabled={loading}

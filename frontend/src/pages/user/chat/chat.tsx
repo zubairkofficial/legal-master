@@ -82,7 +82,9 @@ const Chat = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   // Changed from string to Question type to store full question object
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
+    null
+  );
   const [customQuestion, setCustomQuestion] = useState("");
   const [questionResponses, setQuestionResponses] = useState<
     ChatQuestionResponse[]
@@ -326,7 +328,7 @@ const Chat = () => {
 
     // Create response for either selected or custom question
     const response = {
-      questionId: selectedQuestion?.id || 'custom',
+      questionId: selectedQuestion?.id || "custom",
       question: selectedQuestion?.content || customQuestion.trim(),
     };
 
@@ -618,9 +620,28 @@ const Chat = () => {
                 <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
               </div>
             ) : categories.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                 {categories.map((category) => (
-                  <CategoryCard key={category.id} category={category} />
+                  <div
+                    key={category.id}
+                    onClick={() => handleCategorySelect(category.id)}
+                    className={`relative p-6 rounded-2xl bg-white border transition-all duration-300 cursor-pointer 
+    hover:shadow-xl hover:-translate-y-1
+    ${
+      selectedCategory === category.id
+        ? "border-[#BB8A28] shadow-lg  via-[#FFF9EB] to-[#FFF3D5]"
+        : "border-gray-200 shadow-sm"
+    }`}
+                  >
+                    <div className="flex flex-col items-center text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-[#BB8A28] flex items-center justify-center text-white text-lg font-bold shadow-md">
+                        {category.name.charAt(0)}
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {category.name}
+                      </h3>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -665,7 +686,9 @@ const Chat = () => {
               <div className="space-y-6 mt-6">
                 {/* Custom Question Input */}
                 <div className="border rounded-lg shadow-md p-6 bg-card">
-                  <h2 className="text-xl font-semibold mb-4">Enter your own topic</h2>
+                  <h2 className="text-xl font-semibold mb-4">
+                    Enter your own topic
+                  </h2>
                   <input
                     type="text"
                     value={customQuestion}
@@ -681,7 +704,9 @@ const Chat = () => {
                 {/* Suggested Questions */}
                 {questions.length > 0 && (
                   <div className="space-y-4">
-                    <h2 className="text-xl font-semibold mb-4">Suggested Topics</h2>
+                    <h2 className="text-xl font-semibold mb-4">
+                      Suggested Topics
+                    </h2>
                     {questions.map((question) => (
                       <div
                         key={question.id}
@@ -717,7 +742,9 @@ const Chat = () => {
                   </Button>
                   <Button
                     onClick={handleQuestionSubmit}
-                    disabled={isLoading || (!selectedQuestion && !customQuestion.trim())}
+                    disabled={
+                      isLoading || (!selectedQuestion && !customQuestion.trim())
+                    }
                     className="px-6"
                   >
                     Next: Legal Questionnaire

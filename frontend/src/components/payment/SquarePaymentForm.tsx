@@ -101,7 +101,7 @@ export default function StripePaymentForm({
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto">
+    <Card className="w-full max-w-lg mx-auto"  style={{ fontFamily: "TikTok Sans, sans-serif" }}> 
       <CardContent className="p-6 space-y-4">
         <div className="space-y-2">
           <Label>Card Information</Label>

@@ -120,6 +120,12 @@ export default function initUserModel(sequelize) {
                 type: DataTypes.STRING,
                 allowNull: true,
             },
+            hasUsedTrial: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+                allowNull: false,
+            },
+
             stripeCustomerId: {
                 type: DataTypes.STRING,
                 allowNull: true

@@ -116,8 +116,9 @@ const SubscriptionPlans: React.FC = () => {
     try {
       const planData = {
         ...formData,
-        price: parseFloat(formData.price),
-        creditAmount: parseFloat(formData.creditAmount),
+        price: formData.price === "" ? 0 : parseFloat(formData.price),
+        creditAmount:
+          formData.creditAmount === "" ? 0 : parseFloat(formData.creditAmount),
         features: formData.features.filter((feature) => feature.trim() !== ""),
       };
 
@@ -244,7 +245,6 @@ const SubscriptionPlans: React.FC = () => {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, price: e.target.value })
                   }
-                  required
                 />
               </div>
               <div className="space-y-2">

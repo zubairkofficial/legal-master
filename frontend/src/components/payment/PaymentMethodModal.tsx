@@ -84,49 +84,64 @@ export default function PaymentMethodModal({
       return;
     }
 
-    const { error, paymentMethod } = await stripe.createPaymentMethod({
-      type: "card",
-      card: cardElement,
-      billing_details: { name: user?.name || "Unknown" },
+    toast({
+      title: "Processing Payment",
+      description: "Please wait while we save your card...",
     });
 
-    if (error) {
-      toast({
-        title: "Payment Method Error",
-        description: error.message || "Error processing your payment.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      await api.post("/payment", {
-        userId: user?.id,
-        stripePaymentMethodId: paymentMethod.id,
-        cardholderName: user?.name || "Unknown",
-        cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
-        lastFourDigits: paymentMethod.card?.last4 || "0000",
-        expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
-        expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
-        autoReniew: autoRenew,
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: "card",
+        card: cardElement,
+        billing_details: { name: user?.name || "Unknown" },
       });
 
+      if (error) {
+        toast({
+          title: "Payment Method Error",
+          description: error.message || "Error processing your payment.",
+          variant: "destructive",
+        });
+        return;
+      }
       onPaymentMethodSelect(paymentMethod.id);
+      api
+        .post("/payment", {
+          userId: user?.id,
+          stripePaymentMethodId: paymentMethod.id,
+          cardholderName: user?.name || "Unknown",
+          cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
+          lastFourDigits: paymentMethod.card?.last4 || "0000",
+          expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
+          expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
+          autoReniew: autoRenew,
+        })
+        .catch((err) => {
+          console.error("Error saving payment method:", err);
+          toast({
+            title: "Save Error",
+            description: "Card saved but failed to sync with server.",
+            variant: "destructive",
+          });
+        });
     } catch (err: any) {
       toast({
-        title: "Error Saving Payment Method",
-        description:
-          err?.response?.data?.message ||
-          err?.message ||
-          "Unable to save your payment method.",
+        title: "Payment Failed",
+        description: err?.message || "Unable to process payment.",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={processingPayment ? undefined : onClose}>
-      <DialogContent className="sm:max-w-[480px] p-6 bg-white rounded-xl shadow-2xl border border-gray-100">
+    <Dialog
+      open={isOpen}
+      onOpenChange={processingPayment ? undefined : onClose}
+    >
+      <DialogContent
+        className="sm:max-w-[480px] p-6 bg-white rounded-xl shadow-2xl border border-gray-100"
+        style={{ fontFamily: "TikTok Sans, sans-serif" }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-800">
             Make Payment
@@ -142,7 +157,9 @@ export default function PaymentMethodModal({
           {/* Direct Payment Tab */}
           <TabsContent value="direct-payment" className="space-y-5">
             <div className="space-y-2">
-              <Label className="text-gray-700 text-sm font-medium">Card Details</Label>
+              <Label className="text-gray-700 text-sm font-medium">
+                Card Details
+              </Label>
               <div className="border rounded-lg p-4 focus-within:ring-[#BB8A28] transition-all">
                 <CardElement options={{ hidePostalCode: true }} />
               </div>
@@ -188,7 +205,9 @@ export default function PaymentMethodModal({
                   <p className="font-medium text-gray-800">
                     {method.cardType} ending in {method.lastFourDigits}
                   </p>
-                  <p className="text-sm text-gray-500">{method.cardholderName}</p>
+                  <p className="text-sm text-gray-500">
+                    {method.cardholderName}
+                  </p>
                 </div>
               ))
             ) : (

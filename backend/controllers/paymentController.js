@@ -324,74 +324,82 @@ class PaymentController {
       const { paymentIntentId, creditAmount, planId } = req.body;
       const userId = req.user.id;
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-      if (paymentIntent.status !== "succeeded") {
-        return res.status(400).json({
-          success: false,
-          error: "Payment not completed successfully.",
-        });
+      const plan = await SubscriptionPlan.findByPk(planId);
+      if (!plan) {
+        return res.status(404).json({ success: false, error: "Subscription plan not found" });
       }
 
-      const user = await User.findByPk(userId);
-      user.credits += parseInt(creditAmount || 0);
-      await user.save();
-
-      const paymentData = {
-        id: paymentIntent.id,
-        amount: paymentIntent.amount,
-        status: paymentIntent.status,
-        currency: paymentIntent.currency,
-      };
-
-      if (planId) {
-        const plan = await SubscriptionPlan.findByPk(planId);
-        if (!plan) throw new Error("Subscription plan not found");
-
-        let expiryDate = new Date();
-        switch (plan.interval) {
-          case "day": expiryDate.setDate(expiryDate.getDate() + 1); break;
-          case "week": expiryDate.setDate(expiryDate.getDate() + 7); break;
-          case "month": expiryDate.setMonth(expiryDate.getMonth() + 1); break;
-          case "quarter": expiryDate.setMonth(expiryDate.getMonth() + 3); break;
-          case "year": expiryDate.setFullYear(expiryDate.getFullYear() + 1); break;
-          default: expiryDate.setMonth(expiryDate.getMonth() + 1);
-        }
-
-        const existingSubscription = await Subscription.findOne({
-          where: { userId, status: "ACTIVE" },
+      // Free trial logic
+      if (Number(plan.price) === 0 || !paymentIntentId) {
+        // Check if user has EVER used this free trial
+        const previousFree = await Subscription.findOne({
+          where: {
+            userId,
+            planId: plan.id,
+            status: { [Op.in]: ["ACTIVE", "CANCELLED", "EXPIRED"] }
+          },
         });
 
-        if (existingSubscription) {
-          await existingSubscription.update({ status: "INACTIVE" });
+        if (previousFree) {
+          return res.status(400).json({
+            success: false,
+            error: "Free trial already used. Please choose a paid plan.",
+          });
         }
 
-        const subscription = await Subscription.create({
+        // Grant free trial
+        await Subscription.create({
           userId,
-          planId,
-          startDate: new Date(),
-          endDate: expiryDate,
+          planId: plan.id,
           status: "ACTIVE",
-          paymentId: paymentIntent.id,
-          amount: paymentIntent.amount,
+          startDate: new Date(),
+          nextBillingDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         });
 
-        paymentData.subscription = subscription;
+        await User.update(
+          { credits: Number(creditAmount) },
+          { where: { id: userId } }
+        );
+
+        return res.status(200).json({
+          success: true,
+          message: "Free plan activated successfully for 3 days.",
+        });
       }
+
+      // Paid plan flow
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (!paymentIntent || paymentIntent.status !== "succeeded") {
+        return res.status(400).json({ success: false, error: "Payment not successful" });
+      }
+
+      await Subscription.create({
+        userId,
+        planId: plan.id,
+        status: "ACTIVE",
+        startDate: new Date(),
+      });
+
+      await User.update(
+        { credits: Number(creditAmount) },
+        { where: { id: userId } }
+      );
 
       return res.status(200).json({
         success: true,
-        data: paymentData,
+        message: "Subscription activated successfully.",
       });
-
     } catch (error) {
       console.error("Error confirming payment:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        error: error.message,
+        error: error.message || "Failed to confirm payment. Please try again later.",
       });
     }
   }
+
+
+
   static async confirmSetupIntent(req, res) {
     try {
       const { paymentMethodId } = req.body;

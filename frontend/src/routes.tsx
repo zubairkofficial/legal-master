@@ -24,6 +24,9 @@ import TrialHistory from "./pages/user/trial/trialHistory";
 import TrialsPage from "./pages/admin/trials";
 import ProductsWithStripe from "./pages/products/ProductsWithStripe";
 import SetupCard from "./components/payment/SetupCard";
+import PrivacyPolicy from "./pages/terms/PrivacyPolicy.jsx";
+import TermsOfService from "./pages/terms/TermsOfService";
+
 
 const router = createBrowserRouter([
   {
@@ -189,6 +192,15 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "/privacy-policy",
+    element: <PrivacyPolicy />,
+  },
+  {
+    path: "/terms-of-service",
+    element: <TermsOfService />,
+  },
+
   {
     path: "*",
     element: <NotFound />,

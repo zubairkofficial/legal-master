@@ -208,45 +208,27 @@ class AuthController {
         const { name, email, password, username } = req.body;
 
         try {
+            // Check email & username
             const existingUserByEmail = await User.findOne({ where: { email } });
             if (existingUserByEmail) {
-                return res.status(400).json({ message: 'Email is already in use.' });
+                return res.status(400).json({ message: "Email is already in use." });
             }
 
-            // Check if username already exists
             const existingUserByUsername = await User.findOne({ where: { username } });
             if (existingUserByUsername) {
-                return res.status(400).json({ message: 'Username is already taken.' });
+                return res.status(400).json({ message: "Username is already taken." });
             }
 
-            // Create the user
+            // Create user
             const newUser = await User.create({
                 name,
                 email,
                 username,
                 password,
-                role: 'user',
+                role: "user",
             });
-
-            // Create Stripe customer and attach ID to user
-            try {
-                const stripeCustomer = await stripe.customers.create({
-                    name: newUser.name,
-                    email: newUser.email,
-                });
-
-                await newUser.update({ stripeCustomerId: stripeCustomer.id });
-            } catch (stripeError) {
-                console.error("❌ Stripe customer creation failed:", stripeError.message);
-                // You may decide to still continue, or return 500 if Stripe customer is required
-            }
-
-            // Send confirmation email
-            await AuthController.sendConfirmationEmail(newUser);
-
-            // Send success response with stripeCustomerId (optional for debugging)
             res.status(201).json({
-                message: 'Signed up successfully. Please check your email for verification.',
+                message: "Signed up successfully. Please check your email for verification.",
                 user: {
                     id: newUser.id,
                     name: newUser.name,
@@ -254,16 +236,33 @@ class AuthController {
                     username: newUser.username,
                     isActive: newUser.isActive,
                     role: newUser.role,
-                    stripeCustomerId: newUser.stripeCustomerId || null,
-
                 },
             });
+            (async () => {
+                try {
+                    const stripeCustomer = await stripe.customers.create({
+                        name: newUser.name,
+                        email: newUser.email,
+                    });
+                    await newUser.update({ stripeCustomerId: stripeCustomer.id });
+                } catch (stripeError) {
+                    console.error("Stripe customer creation failed:", stripeError.message);
+                }
+
+                try {
+                    await AuthController.sendConfirmationEmail(newUser);
+                    console.log("Email sent successfully");
+                } catch (emailError) {
+                    console.error("Failed to send confirmation email:", emailError.message);
+                }
+            })();
         } catch (error) {
-            console.error('Error creating user:', error);
-            res.status(500).json({ message: `Internal server error: ${error.message}` });
+            console.error("Error creating user:", error);
+            if (!res.headersSent) {
+                res.status(500).json({ message: `Internal server error: ${error.message}` });
+            }
         }
     }
-
 
     static async verifyEmail(req, res) {
         const { token, email } = req.query;
@@ -312,7 +311,7 @@ class AuthController {
                 where: {
                     [Op.or]: [
                         { username },
-                        { email: username } // allow login by username or email
+                        { email: username }
                     ]
                 }
             });

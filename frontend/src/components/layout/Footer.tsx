@@ -1,32 +1,35 @@
-import { FaFacebookF } from "react-icons/fa";
-import { FaTwitter } from "react-icons/fa";
-import { FaInstagram } from "react-icons/fa";
-import { FaLinkedin } from "react-icons/fa";
-
-function scrollToSection(id: string) {
-  const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: "smooth" });
-  }
-}
+import {
+  FaFacebookF,
+  FaTwitter,
+  FaInstagram,
+  FaLinkedin,
+} from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export function Footer() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleScrollLink = (sectionId: string) => {
+    if (location.pathname !== "/") {
+      navigate("/", { state: { scrollTo: sectionId } });
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <footer className="bg-background border-t border-border">
-      <div className=" mx-20 container px-4 py-12">
+    <footer className="bg-background border-t border-border container">
+      <div className="px-4 py-12 max-w-7xl mx-20 container">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Brand */}
           <div>
-            <div className="flex items-center space-x-2 mb-6">
-              <a
-                href="#hero"
-                className="flex items-center space-x-2"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection("hero");
-                }}
-              >
-                <img src="/assets/logo.png" alt="" className="w-40 h-auto" />
-              </a>
+            <div
+              className="flex items-center space-x-2 mb-6 cursor-pointer"
+              onClick={() => handleScrollLink("hero")}
+            >
+              <img src="/assets/logo.png" alt="Logo" className="w-40 h-auto" />
             </div>
             <p className="text-muted-foreground">
               Transforming legal assistance with AI technology to make justice
@@ -34,52 +37,58 @@ export function Footer() {
             </p>
           </div>
 
+          {/* Links */}
           <div>
             <h3 className="font-semibold mb-4">Links</h3>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#hero"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection("hero");
-                  }}
+                <button
+                  onClick={() => handleScrollLink("hero")}
                   className="text-muted-foreground hover:text-[#BB8A28] transition"
                 >
                   Home
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#about"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection("about");
-                  }}
+                <button
+                  onClick={() => handleScrollLink("about")}
                   className="text-muted-foreground hover:text-[#BB8A28] transition"
                 >
                   About
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#testimonials"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection("testimonials");
-                  }}
+                <button
+                  onClick={() => handleScrollLink("testimonials")}
                   className="text-muted-foreground hover:text-[#BB8A28] transition"
                 >
                   Reviews
-                </a>
+                </button>
+              </li>
+              <li>
+                <Link
+                  to="/terms-of-service"
+                  className="text-muted-foreground hover:text-[#BB8A28] transition"
+                >
+                  Terms of Service
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/privacy-policy"
+                  className="text-muted-foreground hover:text-[#BB8A28] transition"
+                >
+                  Privacy Policy
+                </Link>
               </li>
             </ul>
           </div>
 
+          {/* Contact */}
           <div>
             <h3 className="font-semibold mb-4">Contact</h3>
             <ul className="space-y-2">
-              <li className="flex items-center gap-2">
+              <li>
                 <a
                   href="mailto:info@legalmaster.ai"
                   className="text-muted-foreground hover:text-[#BB8A28] transition"
@@ -89,10 +98,10 @@ export function Footer() {
               </li>
             </ul>
             <div className="flex space-x-4 mt-4">
-              <FaFacebookF className="text-muted-foreground hover:text-[#BB8A28] transition" />
-              <FaTwitter className="text-muted-foreground hover:text-[#BB8A28] transition" />
-              <FaInstagram className="text-muted-foreground hover:text-[#BB8A28] transition" />
-              <FaLinkedin className="text-muted-foreground hover:text-[#BB8A28] transition" />
+              <FaFacebookF className="text-muted-foreground hover:text-[#BB8A28] transition cursor-pointer" />
+              <FaTwitter className="text-muted-foreground hover:text-[#BB8A28] transition cursor-pointer" />
+              <FaInstagram className="text-muted-foreground hover:text-[#BB8A28] transition cursor-pointer" />
+              <FaLinkedin className="text-muted-foreground hover:text-[#BB8A28] transition cursor-pointer" />
             </div>
           </div>
         </div>

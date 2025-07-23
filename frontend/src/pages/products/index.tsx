@@ -33,6 +33,7 @@ export default function Products() {
   const [activeSubscription, setActiveSubscription] =
     useState<Subscription | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false); // NEW
   const { toast } = useToast();
   const { user } = useUserStore();
 
@@ -43,8 +44,6 @@ export default function Products() {
   const loadData = async () => {
     try {
       setLoading(true);
-
-      // Load plans and active subscription in parallel
       const [plansData, activeSubData] = await Promise.all([
         subscriptionService.getAllPlans(),
         subscriptionService.getUserActiveSubscription(),
@@ -65,10 +64,51 @@ export default function Products() {
     }
   };
 
-  const handleGetStarted = (plan: SubscriptionPlan) => {
+  const handleGetStarted = async (plan: SubscriptionPlan) => {
+    if (Number(plan.price) === 0) {
+      try {
+        setProcessingPayment(true);
+
+        const response = await api.post("/payment/confirm", {
+          paymentIntentId: null, // no payment needed
+          creditAmount: plan.creditAmount,
+          planId: plan.id,
+        });
+
+        toast({
+          title: "Success",
+          description:
+            response.data.message || "Free plan activated! Credits added.",
+        });
+
+        // Update user credits
+        const updatedCredits = await chatService.fetchUserCredits();
+        useUserStore.getState().updateUser({ credits: updatedCredits });
+
+        // Refresh active subscription state
+        const activeSubData =
+          await subscriptionService.getUserActiveSubscription();
+        setActiveSubscription(activeSubData);
+      } catch (error: any) {
+        console.error("Error activating free plan:", error);
+        toast({
+          title: "Error",
+          description:
+            error.response?.data?.error ||
+            "Failed to activate free plan. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setProcessingPayment(false);
+      }
+      return;
+    }
+
+    // For paid plans, proceed with Stripe modal
     setSelectedPlan(plan);
     setShowPaymentModal(true);
   };
+
   const handlePaymentMethodSelect = async (paymentMethodId: string) => {
     if (!selectedPlan || !user?.id) return;
 
@@ -160,10 +200,19 @@ export default function Products() {
   const handleCancelSubscription = async () => {
     if (!activeSubscription) return;
 
+    // Ask for confirmation only if it's a free plan
+    if (Number(activeSubscription.plan?.price || 0) === 0) {
+      setShowCancelModal(true); // Open Tailwind modal
+      return;
+    }
+
+    await proceedCancelSubscription();
+  };
+
+  const proceedCancelSubscription = async () => {
     try {
       setProcessingPayment(true);
 
-      // Call API to cancel subscription
       await subscriptionService.cancelSubscription(activeSubscription.id);
 
       toast({
@@ -171,13 +220,20 @@ export default function Products() {
         description: "Your subscription has been successfully cancelled.",
       });
 
-      // Update user credits after cancellation
+      // Update user credits
       const updatedCredits = await chatService.fetchUserCredits();
       useUserStore.getState().updateUser({ credits: updatedCredits });
 
       // Reload subscription state
       const updatedSub = await subscriptionService.getUserActiveSubscription();
-      setActiveSubscription(updatedSub); // should now be null
+      setActiveSubscription(updatedSub);
+
+      // Hide free trial plan after cancellation
+      if (Number(activeSubscription.plan?.price || 0) === 0) {
+        setPlans((prevPlans) =>
+          prevPlans.filter((p) => p.id !== activeSubscription.planId)
+        );
+      }
     } catch (error) {
       console.error("Cancel Subscription Error:", error);
       toast({
@@ -187,6 +243,7 @@ export default function Products() {
       });
     } finally {
       setProcessingPayment(false);
+      setShowCancelModal(false);
     }
   };
 
@@ -202,158 +259,198 @@ export default function Products() {
     const activePlan = activeSubscription.plan;
 
     return (
-      <section className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your Active Subscription
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              You are currently subscribed to our service
-            </p>
+      <>
+        <section className="py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Your Active Subscription
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                You are currently subscribed to our service
+              </p>
+            </div>
+
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>{activePlan?.name || "Active Plan"}</CardTitle>
+                <CardDescription>
+                  {activePlan?.description || "Your current subscription"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <span className="text-3xl font-bold">
+                    $
+                    {activePlan?.price
+                      ? (activePlan.price / 100).toFixed(2)
+                      : "0.00"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    /{activePlan?.interval || "month"}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <p>
+                    <strong>Status:</strong> {activeSubscription.status}
+                  </p>
+                  <p>
+                    <strong>Start Date:</strong>{" "}
+                    {new Date(activeSubscription.startDate).toLocaleDateString()}
+                  </p>
+                  {activeSubscription.nextBillingDate && (
+                    <p>
+                      <strong>Next Billing:</strong>{" "}
+                      {new Date(
+                        activeSubscription.nextBillingDate
+                      ).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+
+                {activePlan?.features && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Features</h3>
+                    <ul className="space-y-2">
+                      {activePlan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center">
+                          <Check className="mr-2 h-4 w-4 text-[#BB8A28] flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+              {activeSubscription && (
+                <CardFooter>
+                  <Button
+                    variant="destructive"
+                    onClick={handleCancelSubscription}
+                    className="w-full"
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      "Cancel Subscription"
+                    )}
+                  </Button>
+                </CardFooter>
+              )}
+            </Card>
+
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">
+                Want to change your plan?
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                You can cancel your current plan and choose a new one below
+              </p>
+            </div>
           </div>
 
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>{activePlan?.name || "Active Plan"}</CardTitle>
-              <CardDescription>
-                {activePlan?.description || "Your current subscription"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <span className="text-3xl font-bold">
-                  $
-                  {activePlan?.price
-                    ? (activePlan.price / 100).toFixed(2)
-                    : "0.00"}
-                </span>
-                <span className="text-muted-foreground">
-                  /{activePlan?.interval || "month"}
-                </span>
-              </div>
+          <div className="max-w-7xl mx-auto mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {plans.map((plan) => (
+                <Card
+                  key={plan.id}
+                  className={`relative ${
+                    activeSubscription.planId === plan.id
+                      ? "border-[#BB8A28] border-2"
+                      : ""
+                  }`}
+                >
+                  <CardHeader>
+                    <CardTitle>{plan.name}</CardTitle>
+                    <CardDescription>{plan.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <span className="text-3xl font-bold">
+                        ${(plan.price / 100).toFixed(2)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        /{plan.interval}
+                      </span>
+                    </div>
+                    <ul className="space-y-2">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-center">
+                          <Check className="mr-2 h-4 w-4 text-[#BB8A28] flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <CardFooter>
+                    <Button
+                      className="w-full bg-[#BB8A28] hover:bg-[#A07923]"
+                      onClick={() => handleGetStarted(plan)}
+                      disabled={
+                        processingPayment ||
+                        (plan.price === 0 &&
+                          activeSubscription?.planId === plan.id &&
+                          new Date(activeSubscription.nextBillingDate || "") >
+                            new Date())
+                      }
+                    >
+                      {processingPayment && selectedPlan?.id === plan.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : activeSubscription.planId === plan.id ? (
+                        "Current Plan"
+                      ) : (
+                        "Switch to this Plan"
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
 
-              <div className="space-y-2">
-                <p>
-                  <strong>Status:</strong> {activeSubscription.status}
-                </p>
-                <p>
-                  <strong>Start Date:</strong>{" "}
-                  {new Date(activeSubscription.startDate).toLocaleDateString()}
-                </p>
-                {activeSubscription.nextBillingDate && (
-                  <p>
-                    <strong>Next Billing:</strong>{" "}
-                    {new Date(
-                      activeSubscription.nextBillingDate
-                    ).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-
-              {activePlan?.features && (
-                <div>
-                  <h3 className="font-semibold mb-2">Features</h3>
-                  <ul className="space-y-2">
-                    {activePlan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center">
-                        <Check className="mr-2 h-4 w-4 text-[#BB8A28] flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-            {activeSubscription && (
-              <CardFooter>
+        {showCancelModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <h2 className="text-xl font-semibold mb-4">Cancel Free Trial</h2>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to cancel your free trial? You won’t be able to activate it again.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={processingPayment}
+                >
+                  No, Keep It
+                </Button>
                 <Button
                   variant="destructive"
-                  onClick={handleCancelSubscription}
-                  className="w-full"
+                  onClick={proceedCancelSubscription}
                   disabled={processingPayment}
                 >
                   {processingPayment ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
+                      Cancelling...
                     </>
                   ) : (
-                    "Cancel Subscription"
+                    "Yes, Cancel"
                   )}
                 </Button>
-              </CardFooter>
-            )}
-          </Card>
-
-          <div className="text-center">
-            <h3 className="text-lg font-semibold mb-2">
-              Want to change your plan?
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              You can cancel your current plan and choose a new one below
-            </p>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {plans.map((plan) => (
-              <Card
-                key={plan.id}
-                className={`relative ${
-                  activeSubscription.planId === plan.id
-                    ? "border-[#BB8A28] border-2"
-                    : ""
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle>{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <span className="text-3xl font-bold">
-                      ${(plan.price / 100).toFixed(2)}
-                    </span>
-                    <span className="text-muted-foreground">
-                      /{plan.interval}
-                    </span>
-                  </div>
-                  <ul className="space-y-2">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-center">
-                        <Check className="mr-2 h-4 w-4 text-[#BB8A28] flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button
-                    className="w-full bg-[#BB8A28] hover:bg-[#A07923]"
-                    onClick={() => handleGetStarted(plan)}
-                    disabled={
-                      activeSubscription.planId === plan.id || processingPayment
-                    }
-                  >
-                    {processingPayment && selectedPlan?.id === plan.id ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : activeSubscription.planId === plan.id ? (
-                      "Current Plan"
-                    ) : (
-                      "Switch to this Plan"
-                    )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+        )}
+      </>
     );
   }
 
@@ -398,7 +495,10 @@ export default function Products() {
                 <Button
                   className="w-full bg-[#BB8A28] hover:bg-[#A07923]"
                   onClick={() => handleGetStarted(plan)}
-                  disabled={processingPayment}
+                  disabled={
+                    processingPayment ||
+                    (plan.price === 0 && activeSubscription?.planId === plan.id)
+                  }
                 >
                   {processingPayment && selectedPlan?.id === plan.id ? (
                     <>

@@ -28,7 +28,7 @@ export default function About() {
             <div className="bg-[#BB8A28]/10 p-4 rounded-lg border-l-4 border-[#BB8A28]">
               <h3 className="font-bold text-lg mb-2">Non-profit Initiative</h3>
               <p className="text-muted-foreground">
-                Legal Master AI, a proud initiative of Bold Champions (501(c)(3) Non-Profit),
+                Legal Master AI, a proud initiative of Build Champions (501(c)(3) Non-Profit),
                 is dedicated to democratizing access to justice. We firmly believe that Justice should not be a privilege but a fundamental right. Our
                 mission is to empower all to navigate, participate, and understand
                 complicated legal processes.
