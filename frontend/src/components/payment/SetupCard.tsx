@@ -16,6 +16,20 @@ const stripePromise = loadStripe(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
 );
 
+const cardStyle = {
+  style: {
+    base: {
+      color: "#32325d",
+      fontFamily: "'Inter', system-ui, sans-serif",
+      fontSmoothing: "antialiased",
+      fontSize: "16px",
+      "::placeholder": { color: "#a0aec0" },
+    },
+    invalid: { color: "#e53e3e" },
+  },
+  hidePostalCode: true, // removes postal code
+};
+
 function CardForm() {
   const stripe = useStripe();
   const elements = useElements();
@@ -23,18 +37,18 @@ function CardForm() {
   const { user, setUser } = useUserStore();
 
   const [loading, setLoading] = useState(false);
-  const [autoRenew, setAutoRenew] = useState(false);
+
+  const [toastShown, setToastShown] = useState(false);
 
   useEffect(() => {
     const checkExistingCard = async () => {
       try {
         const res = await api.get("/payment");
-        const savedMethods = res.data.data;
-
-        if (savedMethods && savedMethods.length > 0) {
-          if (user && user.isOld !== false) {
+        if (res.data?.data?.length > 0 && !toastShown) {
+          if (user) {
             setUser({ ...user, isOld: false });
           }
+          setToastShown(true);
           Helpers.showToast("Card already saved, redirecting...", "success");
           navigate("/chat/new", { replace: true });
         }
@@ -44,11 +58,10 @@ function CardForm() {
     };
 
     checkExistingCard();
-  }, [navigate, setUser, user]);
+  }, [navigate, setUser, user, toastShown]);
 
   const handleSaveCard = async () => {
     if (!stripe || !elements) return;
-
     const cardElement = elements.getElement(CardElement);
     if (!cardElement) {
       Helpers.showToast("Card element not found", "error");
@@ -65,40 +78,20 @@ function CardForm() {
 
       if (error) {
         Helpers.showToast(error.message || "Failed to save card", "error");
-        setLoading(false);
         return;
       }
 
-      const savedRes = await api.get("/payment");
-      const savedMethods = savedRes.data.data || [];
-      const existingMethod = savedMethods.length > 0 ? savedMethods[0] : null;
+      await api.post("/payment", {
+        userId: user?.id,
+        stripePaymentMethodId: paymentMethod.id,
+        cardholderName: user?.name || "Unknown",
+        cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
+        lastFourDigits: paymentMethod.card?.last4 || "0000",
+        expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
+        expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
+      });
 
-      if (existingMethod) {
-        await api.put(`/payment/${existingMethod.id}`, {
-          stripePaymentMethodId: paymentMethod.id,
-          cardholderName: user?.name || "Unknown",
-          cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
-          lastFourDigits: paymentMethod.card?.last4 || "0000",
-          expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
-          expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
-          autoReniew: autoRenew,
-        });
-      } else {
-        await api.post("/payment", {
-          userId: user?.id,
-          stripePaymentMethodId: paymentMethod.id,
-          cardholderName: user?.name || "Unknown",
-          cardType: paymentMethod.card?.brand?.toUpperCase() || "UNKNOWN",
-          lastFourDigits: paymentMethod.card?.last4 || "0000",
-          expiryMonth: paymentMethod.card?.exp_month?.toString() || "01",
-          expiryYear: paymentMethod.card?.exp_year?.toString() || "2025",
-          autoReniew: autoRenew,
-        });
-      }
-
-      if (user) {
-        setUser({ ...user, isOld: false });
-      }
+      if (user) setUser({ ...user, isOld: false });
 
       Helpers.showToast("Card saved successfully!", "success");
       navigate("/chat/new", { replace: true });
@@ -111,29 +104,51 @@ function CardForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md space-y-4">
-      <h2 className="text-xl font-semibold">Save Your Payment Method</h2>
-      <CardElement className="p-3 border rounded-md" />
+    <div className="max-w-md mx-auto mt-12 p-8 bg-white rounded-xl shadow-lg border border-gray-200">
+      <h2 className="text-xl font-semibold mb-6 text-gray-900 text-center">
+        Save Your Card
+      </h2>
 
-      <div className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          id="autoRenew"
-          checked={autoRenew}
-          onChange={(e) => setAutoRenew(e.target.checked)}
-          className="w-4 h-4"
-        />
-        <label htmlFor="autoRenew" className="text-sm">
-          Enable Auto-Renew for this card
-        </label>
+      <p className="text-sm text-gray-500 mb-6 text-center">
+        Add your card details securely. No charges will be made.
+      </p>
+
+      <div className="p-4 border rounded-md  focus-within:ring-2 focus-within:ring-[#BB8A28] transition-all">
+        <CardElement options={cardStyle} />
       </div>
 
       <Button
         onClick={handleSaveCard}
         disabled={loading}
-        className="w-full bg-[#BB8A28] text-white"
+        className="mt-6 w-full bg-[#BB8A28] hover:bg-[#a67b23] text-white font-medium rounded-lg py-2.5 transition-all"
       >
-        {loading ? "Saving..." : "Save Card"}
+        {loading ? (
+          <span className="flex items-center justify-center gap-2">
+            <svg
+              className="animate-spin w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="white"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="white"
+                d="M4 12a8 8 0 018-8v8z"
+              />
+            </svg>
+            Saving...
+          </span>
+        ) : (
+          "Save Card"
+        )}
       </Button>
     </div>
   );
@@ -146,9 +161,3 @@ export default function SetupCard() {
     </Elements>
   );
 }
-
-
-//
-// UPDATE users
-// SET "isOld" = TRUE
-// WHERE "createdAt" < '2025-07-01';

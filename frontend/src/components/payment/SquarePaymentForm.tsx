@@ -40,10 +40,11 @@ export default function StripePaymentForm({
       return;
     }
 
-    setLoading(true);
+    setLoading(true); // Instant feedback
 
     try {
-      const intentRes: any = await api.post("/payments/process", {
+      // Create PaymentIntent
+      const intentRes = await api.post("/payments/process", {
         amount,
         currency: "usd",
         creditAmount,
@@ -52,7 +53,7 @@ export default function StripePaymentForm({
 
       const clientSecret = intentRes.data.clientSecret;
 
-      // Step 2: Confirm Card Payment
+      // Confirm Payment
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement)!,
@@ -64,16 +65,12 @@ export default function StripePaymentForm({
       });
 
       if (result.error) {
-        let errorMsg =
-          result.error.message ||
-          "There was an error processing your payment. Please check your card details.";
         toast({
           title: "Payment Failed",
-          description: errorMsg,
+          description: result.error.message || "Error processing payment.",
           variant: "destructive",
         });
         onPaymentError(result.error);
-        setLoading(false);
         return;
       }
 
@@ -83,29 +80,15 @@ export default function StripePaymentForm({
           planId,
           creditAmount,
         });
-
         onPaymentSuccess(confirmRes.data.data);
       } else {
-        toast({
-          title: "Payment Failed",
-          description: "Payment not successful.",
-          variant: "destructive",
-        });
         throw new Error("Payment not successful.");
       }
     } catch (error: any) {
-      let errorMsg =
+      const errorMsg =
         error?.response?.data?.message ||
         error?.message ||
-        "There was an error processing your payment. Please check your card details.";
-      if (
-        errorMsg.includes(
-          "Your card was declined. Your request used a real card while testing"
-        )
-      ) {
-        errorMsg =
-          "Your card was declined because you used a real card in test mode. Please use a Stripe test card. See: https://stripe.com/docs/testing";
-      }
+        "There was an error processing your payment.";
       toast({
         title: "Payment Failed",
         description: errorMsg,
@@ -123,7 +106,7 @@ export default function StripePaymentForm({
         <div className="space-y-2">
           <Label>Card Information</Label>
           <div
-            className={`border p-3 rounded-md min-h-[40px] ${
+            className={`border p-3 rounded-md min-h-[40px] transition-all ${
               disabled ? "opacity-70 pointer-events-none" : ""
             }`}
           >
@@ -134,9 +117,35 @@ export default function StripePaymentForm({
         <Button
           onClick={handlePaymentSubmit}
           disabled={loading || disabled}
-          className="w-full"
+          className="w-full flex items-center justify-center gap-2"
         >
-          {loading ? "Processing..." : `Pay $${(amount / 100).toFixed(2)}`}
+          {loading ? (
+            <>
+              <svg
+                className="animate-spin h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="white"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="white"
+                  d="M4 12a8 8 0 018-8v8z"
+                />
+              </svg>
+              Processing...
+            </>
+          ) : (
+            `Pay $${(amount / 100).toFixed(2)}`
+          )}
         </Button>
       </CardContent>
     </Card>

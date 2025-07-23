@@ -84,16 +84,14 @@ const Auth: React.FC<AuthProps> = ({
     return () => clearInterval(interval);
   }, [token, user, navigate, clearUser, setUser]);
 
-  // Redirect to card setup if the user isOld
+
   useEffect(() => {
     if (!loading && user && token) {
-      if ((user as any).isOld) {
+      if (user.role === "user" && (user as any).isOld) {
         navigate("/setup-card", { replace: true });
-      } else {
-        navigate("/chat/new", { replace: true });
       }
     }
-  }, [loading, token, user?.isOld, navigate]);
+  }, [loading, token, user?.isOld, user?.role, navigate]);
 
   if (loading) return null;
 

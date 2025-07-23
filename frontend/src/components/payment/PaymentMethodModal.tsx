@@ -39,7 +39,6 @@ export default function PaymentMethodModal({
   processingPayment = false,
 }: PaymentMethodModalProps) {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  // const [showAddNew, setShowAddNew] = useState(false);
   const { user } = useUserStore();
   const [activeTab, setActiveTab] = useState("direct-payment");
   const [autoRenew, setAutoRenew] = useState(false);
@@ -49,23 +48,17 @@ export default function PaymentMethodModal({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isOpen) {
-      loadPaymentMethods();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isOpen) loadPaymentMethods();
   }, [isOpen]);
 
   const loadPaymentMethods = async () => {
     try {
       const response = await api.get(`/payment`);
       setPaymentMethods(response.data.data || []);
-      // if (response.data.data?.length === 0) {
-      //   setShowAddNew(true);
-      // }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
-        description: "Error loading payment methods.",
+        description: "Failed to load payment methods.",
         variant: "destructive",
       });
     }
@@ -94,16 +87,13 @@ export default function PaymentMethodModal({
     const { error, paymentMethod } = await stripe.createPaymentMethod({
       type: "card",
       card: cardElement,
-      billing_details: {
-        name: user?.name || "Unknown",
-      },
+      billing_details: { name: user?.name || "Unknown" },
     });
 
     if (error) {
       toast({
         title: "Payment Method Error",
-        description:
-          error.message || "There was an error processing your payment.",
+        description: error.message || "Error processing your payment.",
         variant: "destructive",
       });
       return;
@@ -128,50 +118,52 @@ export default function PaymentMethodModal({
         description:
           err?.response?.data?.message ||
           err?.message ||
-          "There was an error saving your payment method.",
+          "Unable to save your payment method.",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={processingPayment ? undefined : onClose}
-    >
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={isOpen} onOpenChange={processingPayment ? undefined : onClose}>
+      <DialogContent className="sm:max-w-[480px] p-6 bg-white rounded-xl shadow-2xl border border-gray-100">
         <DialogHeader>
-          <DialogTitle>Make Payment</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-gray-800">
+            Make Payment
+          </DialogTitle>
         </DialogHeader>
 
         <Tabs
           defaultValue="direct-payment"
-          className="w-full"
           value={activeTab}
           onValueChange={setActiveTab}
+          className="w-full mt-4"
         >
-          {/* Stripe Card Payment Tab */}
-          <TabsContent value="direct-payment" className="space-y-4">
+          {/* Direct Payment Tab */}
+          <TabsContent value="direct-payment" className="space-y-5">
             <div className="space-y-2">
-              <Label>Card Details</Label>
-              <div className="border p-4 rounded bg-white">
+              <Label className="text-gray-700 text-sm font-medium">Card Details</Label>
+              <div className="border rounded-lg p-4 focus-within:ring-[#BB8A28] transition-all">
                 <CardElement options={{ hidePostalCode: true }} />
               </div>
             </div>
-            <div className="flex items-center space-x-2 mt-2">
+
+            <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="autoRenew"
                 checked={autoRenew}
                 onChange={(e) => setAutoRenew(e.target.checked)}
-                className="w-4 h-4"
+                className="w-4 h-4 accent-[#BB8A28]"
               />
-              <Label htmlFor="autoRenew">Enable Auto-Renew</Label>
+              <Label htmlFor="autoRenew" className="text-sm text-gray-600">
+                Enable Auto-Renew
+              </Label>
             </div>
 
             <DialogFooter>
               <Button
-                className="w-full"
+                className="w-full bg-[#BB8A28] hover:bg-[#a67b23] text-white font-medium rounded-lg py-2 transition-all"
                 onClick={handleDirectPayment}
                 disabled={processingPayment}
               >
@@ -180,63 +172,30 @@ export default function PaymentMethodModal({
             </DialogFooter>
           </TabsContent>
 
-          {/* Optional Saved Cards Section – not used unless Stripe saves them */}
-          <TabsContent value="saved-cards">
-            <div className="space-y-4">
-              {paymentMethods.length > 0 ? (
-                paymentMethods.map((method) => (
-                  <div
-                    key={method.id}
-                    className={`border rounded p-4 cursor-pointer hover:border-primary ${
-                      processingPayment ? "opacity-50 pointer-events-none" : ""
-                    }`}
-                    onClick={() =>
-                      !processingPayment && onPaymentMethodSelect(method.id)
-                    }
-                  >
-                    <p className="font-medium">
-                      {method.cardType} ending in {method.lastFourDigits}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {method.cardholderName}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  No saved payment methods.
-                </p>
-              )}
-            </div>
-          </TabsContent>
-          {/* Optional Saved Cards Section – not used unless Stripe saves them */}
-          <TabsContent value="saved-cards">
-            <div className="space-y-4">
-              {paymentMethods.length > 0 ? (
-                paymentMethods.map((method) => (
-                  <div
-                    key={method.id}
-                    className={`border rounded p-4 cursor-pointer hover:border-primary ${
-                      processingPayment ? "opacity-50 pointer-events-none" : ""
-                    }`}
-                    onClick={() =>
-                      !processingPayment && onPaymentMethodSelect(method.id)
-                    }
-                  >
-                    <p className="font-medium">
-                      {method.cardType} ending in {method.lastFourDigits}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {method.cardholderName}{" "}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  No saved payment methods.
-                </p>
-              )}
-            </div>
+          {/* Saved Cards Tab */}
+          <TabsContent value="saved-cards" className="space-y-4">
+            {paymentMethods.length > 0 ? (
+              paymentMethods.map((method) => (
+                <div
+                  key={method.id}
+                  onClick={() =>
+                    !processingPayment && onPaymentMethodSelect(method.id)
+                  }
+                  className={`p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer ${
+                    processingPayment ? "opacity-50 pointer-events-none" : ""
+                  }`}
+                >
+                  <p className="font-medium text-gray-800">
+                    {method.cardType} ending in {method.lastFourDigits}
+                  </p>
+                  <p className="text-sm text-gray-500">{method.cardholderName}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">
+                No saved payment methods.
+              </p>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
