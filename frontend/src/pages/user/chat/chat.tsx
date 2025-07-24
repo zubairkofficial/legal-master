@@ -4,6 +4,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import categoryService, { Category } from "@/services/category.service";
 import questionService, { Question } from "@/services/question.service";
+import creditsImg from "./categoryIcon.png";
+
 import chatService, {
   QuestionResponse as ChatQuestionResponse,
   LegalQuestionnaireData,
@@ -15,6 +17,7 @@ import LegalQuestionnaire from "@/components/forms/LegalQuestionnaire";
 import { eventEmitter } from "@/lib/eventEmitter";
 import ChatGPTFormatter from "@/components/chatgptformatter";
 import Helpers from "@/config/helpers";
+import { FaArrowLeft } from "react-icons/fa";
 
 enum ChatStage {
   CATEGORY_SELECTION = "category_selection",
@@ -488,14 +491,11 @@ const Chat = () => {
       return (
         <div
           key="chat-interaction"
-          className="flex flex-col h-full bg-background rounded-lg  overflow-hidden"
+          className="flex flex-col h-full bg-background rounded-lg  overflow-hidden font-[Poppins]"
           ref={chatContainerRef}
         >
-          {/* Chat header */}
-
-          {/* Messages area */}
           <div
-            className="flex-1 overflow-auto p-6 space-y-6"
+            className="flex-1 overflow-auto p-6 space-y-6 bg-[#F8F6F4]"
             style={{ scrollbarWidth: "thin" }}
           >
             {messages.length === 0 ? (
@@ -593,11 +593,13 @@ const Chat = () => {
         return (
           <div
             key="category-selection"
-            className="container mx-auto px-4 py-8 max-w-5xl"
+            className="container mx-auto px-8 py-16 max-w-3xl rounded-xl bg-white"
           >
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold">Select a Category</h1>
-              <p className="text-muted-foreground mt-2">
+            <div className="mb-10 text-center p-5">
+              <h1 className="text-2xl font-semibold text-gray-800">
+                Select a Category
+              </h1>
+              <p className="text-gray-500 mt-2">
                 Choose a topic to start your conversation
               </p>
             </div>
@@ -616,8 +618,8 @@ const Chat = () => {
             )}
 
             {isLoading ? (
-              <div className="flex justify-center py-20">
-                <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
+              <div className="flex justify-center py-20 px-10">
+                <div className="animate-spin h-12 w-12 border-4 border-yellow-500 border-opacity-30 rounded-full border-t-yellow-600"></div>
               </div>
             ) : categories.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -625,31 +627,26 @@ const Chat = () => {
                   <div
                     key={category.id}
                     onClick={() => handleCategorySelect(category.id)}
-                    className={`relative p-6 rounded-2xl bg-white border transition-all duration-300 cursor-pointer 
-    hover:shadow-xl hover:-translate-y-1
-    ${
-      selectedCategory === category.id
-        ? "border-[#BB8A28] shadow-lg  via-[#FFF9EB] to-[#FFF3D5]"
-        : "border-gray-200 shadow-sm"
-    }`}
+                    className={`flex flex-col items-center justify-center p-10 rounded-xl cursor-pointer border transition-all duration-300 
+          ${
+            selectedCategory === category.id
+              ? "border-yellow-500  bg-[#F8F6F4] p-4"
+              : "border-gray-200 bg-[#F8F6F4] px-10 hover:border-gray-300"
+          }`}
                   >
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      <div className="w-12 h-12 rounded-full bg-[#BB8A28] flex items-center justify-center text-white text-lg font-bold shadow-md">
-                        {category.name.charAt(0)}
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {category.name}
-                      </h3>
+                    <div className="w-14 h-12 rounded-md flex items-center justify-center bg-[#DCA21B33] p-3">
+                      <img src={creditsImg} alt="hy" />
                     </div>
+                    <h3 className="mt-4 text-gray-800 text-sm font-medium">
+                      {category.name}
+                    </h3>
                   </div>
                 ))}
               </div>
             ) : (
               !apiError && (
                 <div className="text-center py-10">
-                  <p className="text-lg text-muted-foreground">
-                    No categories found.
-                  </p>
+                  <p className="text-lg text-gray-500">No categories found.</p>
                   <Button onClick={loadCategories} className="mt-4">
                     Refresh Categories
                   </Button>
@@ -663,97 +660,181 @@ const Chat = () => {
         return (
           <div
             key="question-selection"
-            className="container mx-auto px-4 py-8 max-w-5xl"
+            className="container mx-auto px-8 py-10 max-w-3xl bg-white rounded-2xl shadow-sm font-[Poppins] min-h-[773px]"
           >
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold">Select a Topic</h1>
-              <p className="text-muted-foreground mt-2">
+            <div className="mb-6 text-center font-[Poppins]">
+              <h1 className="text-3xl text-gray-800">Select a Topic</h1>
+              <p className="text-gray-500 mt-1">
                 Choose a suggested question or enter your own topic
               </p>
-
-              {apiError && (
-                <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
-                  {apiError}
-                </div>
-              )}
             </div>
 
-            {isLoading ? (
-              <div className="flex justify-center py-20">
-                <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
-              </div>
-            ) : (
-              <div className="space-y-6 mt-6">
-                {/* Custom Question Input */}
-                <div className="border rounded-lg shadow-md p-6 bg-card">
-                  <h2 className="text-xl font-semibold mb-4">
-                    Enter your own topic
-                  </h2>
-                  <input
-                    type="text"
-                    value={customQuestion}
-                    onChange={(e) => {
-                      setCustomQuestion(e.target.value);
-                      setSelectedQuestion(null); // Clear selected question when typing custom
-                    }}
-                    className="w-full p-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none"
-                    placeholder="Type your legal question or topic..."
-                  />
-                </div>
+            <div className="mb-6 bg-[#F8F6F4] p-5 border-1 rounded-xl">
+              <label
+                htmlFor="custom-topic"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Enter your own topic
+              </label>
+              <input
+                id="custom-topic"
+                type="text"
+                value={customQuestion}
+                onChange={(e) => {
+                  setCustomQuestion(e.target.value);
+                  setSelectedQuestion(null);
+                }}
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#BB8A28] focus:outline-none bg-white"
+                placeholder="Enter your own topic..."
+              />
+            </div>
 
-                {/* Suggested Questions */}
-                {questions.length > 0 && (
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold mb-4">
-                      Suggested Topics
-                    </h2>
-                    {questions.map((question) => (
-                      <div
-                        key={question.id}
-                        className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
-                          selectedQuestion === question
-                            ? "bg-[#BB8A28] bg-opacity-10 border-[#BB8A28]"
-                            : "bg-card border-border hover:border-[#BB8A28]"
-                        }`}
-                        onClick={() => {
-                          handleQuestionSelect(question.id);
-                          setCustomQuestion(""); // Clear custom question when selecting suggested
-                        }}
-                      >
-                        <div className="h-2 bg-[#BB8A28]" />
-                        <div className="p-6">
-                          <h2 className="text-lg font-medium text-foreground">
-                            {question.content}
-                          </h2>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex justify-between pt-4">
-                  <Button
-                    type="button"
-                    onClick={() => setStage(ChatStage.CATEGORY_SELECTION)}
-                    variant="outline"
-                    className="px-6"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleQuestionSubmit}
-                    disabled={
-                      isLoading || (!selectedQuestion && !customQuestion.trim())
-                    }
-                    className="px-6"
-                  >
-                    Next: Legal Questionnaire
-                  </Button>
+            {/* Suggested Topics */}
+            {questions.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-sm font-medium text-gray-700 mb-2">
+                  Suggested Topics
+                </h2>
+                <div className="space-y-5">
+                  {questions.map((question) => (
+                    <button
+                      key={question.id}
+                      type="button"
+                      className={`w-full text-left px-4 py-5 rounded-md border transition-all duration-200 text-sm
+                  ${
+                    selectedQuestion?.id === question.id
+                      ? "bg-[#F2E9D8] border-[#BB8A28] text-gray-700"
+                      : "text-[#BB8A28] border-[#BB8A28] bg-[#F1E8D4]"
+                  }`}
+                      onClick={() => {
+                        handleQuestionSelect(question.id);
+                        setCustomQuestion(""); // Clear input if suggestion selected
+                      }}
+                    >
+                      {question.content}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between items-center mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStage(ChatStage.CATEGORY_SELECTION)}
+                className="text-sm px-5 py-5 m-2 border-1 border-[#BB8A28] text-[#BB8A28] "
+              >
+               <FaArrowLeft className="w-5 h-5" /> Back
+              </Button>
+              <Button
+                onClick={handleQuestionSubmit}
+                disabled={
+                  isLoading || (!selectedQuestion && !customQuestion.trim())
+                }
+                className="bg-[#BB8A28] hover:bg-[#A07820] text-white text-sm px-6 py-6 m-3 "
+              >
+                Next: Legal Questionnaire
+              </Button>
+            </div>
           </div>
         );
+
+      // return (
+      //   <div
+      //     key="question-selection"
+      //     className="container mx-auto px-4 py-8 max-w-5xl"
+      //   >
+      //     <div className="mb-8 text-center">
+      //       <h1 className="text-3xl font-bold">Select a Topic</h1>
+      //       <p className="text-muted-foreground mt-2">
+      //         Choose a suggested question or enter your own topic
+      //       </p>
+
+      //       {apiError && (
+      //         <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+      //           {apiError}
+      //         </div>
+      //       )}
+      //     </div>
+
+      //     {isLoading ? (
+      //       <div className="flex justify-center py-20">
+      //         <div className="animate-spin h-12 w-12 border-4 border-[#BB8A28] border-opacity-50 rounded-full border-t-[#BB8A28]"></div>
+      //       </div>
+      //     ) : (
+      //       <div className="space-y-6 mt-6">
+      //         {/* Custom Question Input */}
+      //         <div className="border rounded-lg shadow-md p-6 bg-card">
+      //           <h2 className="text-xl font-semibold mb-4">
+      //             Enter your own topic
+      //           </h2>
+      //           <input
+      //             type="text"
+      //             value={customQuestion}
+      //             onChange={(e) => {
+      //               setCustomQuestion(e.target.value);
+      //               setSelectedQuestion(null); // Clear selected question when typing custom
+      //             }}
+      //             className="w-full p-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-[#BB8A28] focus:outline-none"
+      //             placeholder="Type your legal question or topic..."
+      //           />
+      //         </div>
+
+      //         {/* Suggested Questions */}
+      //         {questions.length > 0 && (
+      //           <div className="space-y-4">
+      //             <h2 className="text-xl font-semibold mb-4">
+      //               Suggested Topics
+      //             </h2>
+      //             {questions.map((question) => (
+      //               <div
+      //                 key={question.id}
+      //                 className={`border rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
+      //                   selectedQuestion === question
+      //                     ? "bg-[#BB8A28] bg-opacity-10 border-[#BB8A28]"
+      //                     : "bg-card border-border hover:border-[#BB8A28]"
+      //                 }`}
+      //                 onClick={() => {
+      //                   handleQuestionSelect(question.id);
+      //                   setCustomQuestion(""); // Clear custom question when selecting suggested
+      //                 }}
+      //               >
+      //                 <div className="h-2 bg-[#BB8A28]" />
+      //                 <div className="p-6">
+      //                   <h2 className="text-lg font-medium text-foreground">
+      //                     {question.content}
+      //                   </h2>
+      //                 </div>
+      //               </div>
+      //             ))}
+      //           </div>
+      //         )}
+
+      //         <div className="flex justify-between pt-4">
+      //           <Button
+      //             type="button"
+      //             onClick={() => setStage(ChatStage.CATEGORY_SELECTION)}
+      //             variant="outline"
+      //             className="px-6"
+      //           >
+      //             Back
+      //           </Button>
+      //           <Button
+      //             onClick={handleQuestionSubmit}
+      //             disabled={
+      //               isLoading || (!selectedQuestion && !customQuestion.trim())
+      //             }
+      //             className="px-6"
+      //           >
+      //             Next: Legal Questionnaire
+      //           </Button>
+      //         </div>
+      //       </div>
+      //     )}
+      //   </div>
+      // );
 
       case ChatStage.LEGAL_QUESTIONNAIRE:
         return (

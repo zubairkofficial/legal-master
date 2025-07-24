@@ -295,7 +295,9 @@ export default function Products() {
                   </p>
                   <p>
                     <strong>Start Date:</strong>{" "}
-                    {new Date(activeSubscription.startDate).toLocaleDateString()}
+                    {new Date(
+                      activeSubscription.startDate
+                    ).toLocaleDateString()}
                   </p>
                   {activeSubscription.nextBillingDate && (
                     <p>
@@ -420,7 +422,8 @@ export default function Products() {
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
               <h2 className="text-xl font-semibold mb-4">Cancel Free Trial</h2>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to cancel your free trial? You won’t be able to activate it again.
+                Are you sure you want to cancel your free trial? You won’t be
+                able to activate it again.
               </p>
               <div className="flex justify-end space-x-3">
                 <Button

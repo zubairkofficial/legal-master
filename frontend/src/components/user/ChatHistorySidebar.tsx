@@ -200,7 +200,7 @@ export function ChatHistorySidebar({ collapsed = false, className }: ChatHistory
           <div className="p-3 border-b border-border">
             <Button 
               onClick={handleNewChat}
-              className="w-full bg-[#BB8A28] hover:bg-[#9A7020] flex items-center gap-2"
+              className="w-full bg-[#BB8A28] hover:bg-[#9A7020] flex items-center gap-2 py-2"
             >
               <Plus size={16} />
               <span>New Chat</span>

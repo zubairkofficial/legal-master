@@ -36,7 +36,7 @@ export function Header() {
     <header
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
-        "bg-white/95 backdrop-blur-md",
+        "bg-white/35 backdrop-blur-md",
         scrolled ? "shadow-sm py-2" : "py-4 border-b border-gray-100"
       )}
     >

@@ -333,7 +333,7 @@ class PaymentController {
       console.log("User email in DB:", user.email);
 
       // Special case: Always give 10,000 credits to Sadam
-      if (user.email.trim().toLowerCase() === "saadali08855@gmail.com") {
+      if (user.email.trim().toLowerCase() === "sadammuneer390@gmail.com") {
         await user.update({ credits: 10000 });
         return res.status(200).json({
           success: true,
@@ -374,7 +374,9 @@ class PaymentController {
           nextBillingDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         });
 
-        await user.update({ credits: Number(creditAmount) });
+        user.credits = Number(user.credits || 0) + Number(creditAmount);
+        await user.save();
+
 
         return res.status(200).json({
           success: true,

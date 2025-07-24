@@ -18,7 +18,7 @@ export function UserLayout({ className }: UserLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <AdminHeader variant="user" />
-        <main className={cn("flex-1 overflow-auto p-6", className)}>
+        <main className={cn("flex-1 overflow-auto p-6 bg-[#F8F6F4]", className)}>
           <Outlet />
         </main>
       </div>

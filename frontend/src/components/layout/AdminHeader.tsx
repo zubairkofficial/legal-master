@@ -1,12 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Scale, Menu, LogOut, Settings, Coins, DollarSign } from "lucide-react";
+import { Scale, Menu, LogOut, Settings, DollarSign } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Sidebar } from "./Sidebar";
 import useUserStore from "@/store/useUserStore";
 import { CreditsPopup } from "../credits/CreditsPopup";
-import { useState } from "react";
+import creditsImg from "./credits.png";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { useEffect } from "react";
 import chatService from "@/services/chat.service";
 
 interface AdminHeaderProps {
@@ -24,15 +24,13 @@ interface AdminHeaderProps {
 export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
   const user = useUserStore((state) => state.user);
   const credits = useUserStore((state) => state.user?.credits);
-  
+
   const navigate = useNavigate();
   const { clearUser } = useUserStore();
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
   const handleLogout = () => {
-    // Clear user data from store
     clearUser();
-    // Redirect to login page
     navigate("/login");
   };
 
@@ -47,15 +45,14 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
     }
   };
 
-  // Fetch credits on mount and when user changes
   useEffect(() => {
     if (user) {
       fetchUserCredits();
     }
-  }, [user?.id]); // Only refetch when user ID changes
+  }, [user?.id]);
 
   return (
-    <header className="bg-background border-b border-border sticky top-0 z-40 h-16">
+    <header className="bg-[#F8F6F4] border-border sticky top-0 z-40 h-24">
       <div className="container mx-auto px-4 h-full flex items-center justify-between">
         {/* Mobile Menu Trigger */}
         <div className="lg:hidden">
@@ -91,23 +88,26 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
           {variant === "user" && (
             <>
               <div
-                className="flex items-center space-x-2 bg-primary/10 px-3 py-1 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors"
+                className="flex items-center max-w-[120px] sm:max-w-none space-x-2 border border-[#BB8A28] px-3 py-2 rounded-lg cursor-pointer hover:bg-primary/20 transition-colors overflow-hidden"
                 onClick={() => navigate("/chat/products")}
               >
-                <Coins className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-primary">
+                <img
+                  src={creditsImg}
+                  alt="credits"
+                  className="w-5 h-5 flex-shrink-0"
+                />
+                <span className="text-sm font-medium text-primary truncate">
                   {credits || 0} Credits
                 </span>
               </div>
+
               <Button
                 onClick={() => navigate("/user/trial")}
                 variant="ghost"
-                className="hidden lg:flex items-center space-x-2 ml-4 hover:bg-primary/50 transition-colors duration-200"
+                className="hidden lg:flex items-center space-x-2 border border-[#BB8A28] px-3 py-2 rounded-lg hover:bg-[#BB8A28]/90 transition-colors duration-200 bg-[#BB8A28] text-white"
               >
-                <div className="flex items-center space-x-2">
-                  <Scale className="h-5 w-5 text-primary" />
-                  <span className="font-medium">Mock Trials</span>
-                </div>
+                <Scale className="w-5 h-5 text-white" />
+                <span className="text-sm font-medium">Mock Trials</span>
               </Button>
             </>
           )}
@@ -122,47 +122,36 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
                     {variant === "admin" ? "AD" : "US"}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden md:inline text-sm font-medium">
-                  {variant === "admin" ? "Admin" : user?.name}
-                </span>
+
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">
+                    {variant === "admin" ? "Admin" : user?.name}
+                  </span>
+                  <span className="text-xs text-gray-500 max-w-[100px] truncate md:max-w-none">
+                    {variant === "admin" ? "Admin" : user?.email}
+                  </span>
+                </div>
               </button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link
-                  to={variant == "admin" ? "/admin/profile" : "/chat/profile"}
-                  className="flex items-center cursor-pointer"
-                >
-                  <Avatar className="h-8 w-8 mr-2">
-                    <AvatarImage
-                      src="https://github.com/shadcn.png"
-                      alt="User"
-                    />
-                    <AvatarFallback>
-                      {variant === "admin" ? "AD" : "US"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {variant === "admin" ? "Admin User" : user?.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {variant === "admin" ? "Administrator" : user?.email}
-                    </p>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
+              {/* Full email shown here */}
+              <div className="px-3 py-2 text-xs text-gray-700 break-all">
+                {variant === "admin" ? "Admin" : user?.email}
+              </div>
               <DropdownMenuSeparator />
+
               <DropdownMenuItem asChild>
                 <Link
-                  to={variant == "admin" ? "/admin/profile" : "/chat/profile"}
+                  to={variant === "admin" ? "/admin/profile" : "/chat/profile"}
                   className="cursor-pointer"
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              {variant == "user" && (
+
+              {variant === "user" && (
                 <DropdownMenuItem asChild>
                   <Link to={"/chat/products"} className="cursor-pointer">
                     <DollarSign className="mr-2 h-4 w-4" />
@@ -185,12 +174,10 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
 
       {/* Credits Popup */}
       {variant === "user" && (
-        <>
-          <CreditsPopup
-            isOpen={isCreditsOpen}
-            onClose={() => setIsCreditsOpen(false)}
-          />
-        </>
+        <CreditsPopup
+          isOpen={isCreditsOpen}
+          onClose={() => setIsCreditsOpen(false)}
+        />
       )}
     </header>
   );
