@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import api from "@/services/api";
 import useUserStore from "@/store/useUserStore";
+import { trackConversion } from "../../tracking/analytics";
 
 interface StripePaymentFormProps {
   amount: number;
@@ -81,6 +82,7 @@ export default function StripePaymentForm({
           creditAmount,
         });
         onPaymentSuccess(confirmRes.data.data);
+        trackConversion("purchase", result.paymentIntent.id);
       } else {
         throw new Error("Payment not successful.");
       }
@@ -101,7 +103,10 @@ export default function StripePaymentForm({
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto"  style={{ fontFamily: "TikTok Sans, sans-serif" }}> 
+    <Card
+      className="w-full max-w-lg mx-auto"
+      style={{ fontFamily: "TikTok Sans, sans-serif" }}
+    >
       <CardContent className="p-6 space-y-4">
         <div className="space-y-2">
           <Label>Card Information</Label>

@@ -68,7 +68,10 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div
+      className="min-h-screen flex"
+      style={{ fontFamily: "TikTok Sans, sans-serif" }}
+    >
       {/* Decorative Side */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#BB8A28] relative overflow-hidden justify-center items-center">
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>

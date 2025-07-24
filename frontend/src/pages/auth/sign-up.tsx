@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import authService from "../../services/auth.service";
 import Helpers from "../../config/helpers";
+import { trackConversion } from "../../tracking/analytics";
 
 export default function SignUp() {
   const [fullName, setFullName] = useState("");
@@ -64,6 +65,7 @@ export default function SignUp() {
         "Account created successfully! Please check your email for verification.",
         "success"
       );
+      trackConversion("signup");
       navigate("/sign-in", { replace: true });
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -166,7 +168,10 @@ export default function SignUp() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <label htmlFor="confirm-password" className="block text-sm font-medium">
+              <label
+                htmlFor="confirm-password"
+                className="block text-sm font-medium"
+              >
                 Confirm Password
               </label>
               <input
@@ -190,7 +195,10 @@ export default function SignUp() {
                 required
                 className="h-4 w-4 text-[#BB8A28] focus:ring-[#BB8A28] border-input rounded"
               />
-              <label htmlFor="terms" className="ml-3 text-sm text-muted-foreground">
+              <label
+                htmlFor="terms"
+                className="ml-3 text-sm text-muted-foreground"
+              >
                 I agree to the{" "}
                 <a href="#" className="text-[#BB8A28] hover:underline">
                   Terms of Service
@@ -233,7 +241,11 @@ export default function SignUp() {
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
         <div className="relative z-10 text-white max-w-md p-12">
           <Link to="/">
-            <img src="/assets/logo.png" alt="Logo" className="w-40 h-auto mb-8" />
+            <img
+              src="/assets/logo.png"
+              alt="Logo"
+              className="w-40 h-auto mb-8"
+            />
           </Link>
           <h2 className="text-3xl font-bold mb-6">
             Cutting-Edge Legal Solutions Powered by AI
@@ -244,15 +256,21 @@ export default function SignUp() {
           </p>
           <ul className="space-y-4 mb-6">
             <li className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
+                ✓
+              </div>
               <p>Access legal expertise 24/7</p>
             </li>
             <li className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
+                ✓
+              </div>
               <p>Generate and review legal documents</p>
             </li>
             <li className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">✓</div>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-white">
+                ✓
+              </div>
               <p>Secure and confidential assistance</p>
             </li>
           </ul>

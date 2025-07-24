@@ -11,6 +11,7 @@ import { Button } from "../../components/ui/button";
 import Helpers from "../../config/helpers";
 import useUserStore from "@/store/useUserStore";
 import api from "@/services/api";
+import { trackConversion } from "../../tracking/analytics";
 
 const stripePromise = loadStripe(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
@@ -95,6 +96,7 @@ function CardForm() {
       // 3. Update UI immediately
       if (user) setUser({ ...user, isOld: false });
       Helpers.showToast("Card saved successfully!", "success");
+      trackConversion("add_payment_info");
       navigate("/chat/new", { replace: true });
 
       // 4. Wait for backend to finish quietly

@@ -13,6 +13,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import useUserStore from "@/store/useUserStore";
 import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import api from "@/services/api";
+import { trackConversion } from "../../tracking/analytics";
 
 interface PaymentMethod {
   id: string;
@@ -105,6 +106,8 @@ export default function PaymentMethodModal({
         return;
       }
       onPaymentMethodSelect(paymentMethod.id);
+      trackConversion("purchase", paymentMethod.id);
+
       api
         .post("/payment", {
           userId: user?.id,

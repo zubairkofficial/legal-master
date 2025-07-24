@@ -20,9 +20,9 @@ export function Footer() {
   };
 
   return (
-    <footer className="bg-background border-t border-border container">
-      <div className="px-4 py-12 max-w-7xl mx-20 container">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="bg-background border-t border-border container mx-auto">
+      <div className="px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 md:px-20">
           {/* Brand */}
           <div>
             <div
