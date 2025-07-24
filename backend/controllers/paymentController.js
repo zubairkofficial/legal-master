@@ -333,7 +333,7 @@ class PaymentController {
       console.log("User email in DB:", user.email);
 
       // Special case: Always give 10,000 credits to Sadam
-      if (user.email.trim().toLowerCase() === "saadali08855@gmail.com") {
+      if (user.email.trim().toLowerCase() === "sadammuneer390@gmail.com") {
         await user.update({ credits: 10000 });
         return res.status(200).json({
           success: true,
@@ -348,6 +348,7 @@ class PaymentController {
 
       // Free trial logic
       if (Number(plan.price) === 0 || !paymentIntentId) {
+        // Check if user has EVER used this free trial
         const previousFree = await Subscription.findOne({
           where: {
             userId,
@@ -357,12 +358,14 @@ class PaymentController {
         });
 
         if (previousFree) {
+          // Important: Do NOT give credits if the user has already used the free trial
           return res.status(400).json({
             success: false,
             error: "Free trial already used. Please choose a paid plan.",
           });
         }
 
+        // Grant free trial
         await Subscription.create({
           userId,
           planId: plan.id,
@@ -406,6 +409,7 @@ class PaymentController {
       });
     }
   }
+
 
 
   static async confirmSetupIntent(req, res) {
