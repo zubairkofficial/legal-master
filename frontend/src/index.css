@@ -1,3 +1,5 @@
+@import url("https://fonts.cdnfonts.com/css/tiktok-sans");
+
 @import "tailwindcss";
 
 @plugin "tailwindcss-animate";
@@ -96,5 +98,8 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  * {
+    @apply font-['Poppins',sans-serif];
   }
 }

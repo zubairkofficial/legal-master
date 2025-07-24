@@ -68,10 +68,7 @@ export default function SignIn() {
   };
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ fontFamily: "TikTok Sans, sans-serif" }}
-    >
+    <div className="min-h-screen flex">
       {/* Decorative Side */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#BB8A28] relative overflow-hidden justify-center items-center">
         <div className="absolute inset-0 bg-[url('/images/law-pattern.webp')] opacity-10 bg-repeat"></div>
@@ -84,7 +81,7 @@ export default function SignIn() {
           <h2 className="text-3xl font-bold mb-6">
             AI-Powered Legal Assistance at Your Fingertips
           </h2>
-          <p className="mb-6 text-white/80">
+          <p className="mb-6 text-white/80 ">
             Join thousands of legal professionals and clients who trust our
             platform for accurate, efficient legal services.
           </p>

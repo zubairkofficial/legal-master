@@ -324,6 +324,23 @@ class PaymentController {
       const { paymentIntentId, creditAmount, planId } = req.body;
       const userId = req.user.id;
 
+      // Fetch the user
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, error: "User not found" });
+      }
+
+      console.log("User email in DB:", user.email);
+
+      // Special case: Always give 10,000 credits to Sadam
+      if (user.email.trim().toLowerCase() === "sadammuneer390@gmail.com") {
+        await user.update({ credits: 10000 });
+        return res.status(200).json({
+          success: true,
+          message: "Special credits granted: 10,000 credits",
+        });
+      }
+
       const plan = await SubscriptionPlan.findByPk(planId);
       if (!plan) {
         return res.status(404).json({ success: false, error: "Subscription plan not found" });
@@ -331,7 +348,6 @@ class PaymentController {
 
       // Free trial logic
       if (Number(plan.price) === 0 || !paymentIntentId) {
-        // Check if user has EVER used this free trial
         const previousFree = await Subscription.findOne({
           where: {
             userId,
@@ -347,7 +363,6 @@ class PaymentController {
           });
         }
 
-        // Grant free trial
         await Subscription.create({
           userId,
           planId: plan.id,
@@ -356,10 +371,7 @@ class PaymentController {
           nextBillingDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         });
 
-        await User.update(
-          { credits: Number(creditAmount) },
-          { where: { id: userId } }
-        );
+        await user.update({ credits: Number(creditAmount) });
 
         return res.status(200).json({
           success: true,
@@ -380,10 +392,7 @@ class PaymentController {
         startDate: new Date(),
       });
 
-      await User.update(
-        { credits: Number(creditAmount) },
-        { where: { id: userId } }
-      );
+      await user.update({ credits: Number(creditAmount) });
 
       return res.status(200).json({
         success: true,
@@ -397,7 +406,6 @@ class PaymentController {
       });
     }
   }
-
 
 
   static async confirmSetupIntent(req, res) {

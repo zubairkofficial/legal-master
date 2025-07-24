@@ -33,7 +33,7 @@ export function Header() {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
-    <header 
+    <header
       className={cn(
         "sticky top-0 z-50 transition-all duration-300",
         "bg-white/95 backdrop-blur-md",
@@ -41,7 +41,7 @@ export function Header() {
       )}
     >
       <div className="mx-20">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between font-normal">
           {/* Logo */}
           <a
             href="#hero"
