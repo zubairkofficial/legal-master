@@ -45,22 +45,36 @@ export default function Products() {
     const updatedCredits = await chatService.fetchUserCredits();
     useUserStore.getState().updateUser({
       credits:
-        user?.email?.trim().toLowerCase() === "saadali08855@gmail.com"
+        user?.email?.trim().toLowerCase() === "sadammuneer390@gmail.com"
           ? 10000
           : updatedCredits,
     });
   };
-
   const loadData = async () => {
     try {
       setLoading(true);
-      const [plansData, activeSubData] = await Promise.all([
+
+      // Fetch only current user's subscriptions to check if free plan was ever used
+      const [plansData, activeSubData, userSubscriptions] = await Promise.all([
         subscriptionService.getAllPlans(),
         subscriptionService.getUserActiveSubscription(),
+        subscriptionService.getAllSubscriptions(),
       ]);
 
-      setPlans(plansData);
+      const hasUsedFreePlan = userSubscriptions.some(
+        (sub) =>
+          sub.plan?.price === 0 &&
+          ["ACTIVE", "CANCELLED", "EXPIRED"].includes(sub.status)
+      );
+
+      const filteredPlans = plansData.filter((p) => {
+        if (p.price === 0 && hasUsedFreePlan) return false;
+        return true;
+      });
+
+      setPlans(filteredPlans);
       setActiveSubscription(activeSubData);
+
       await updateCreditsForUser();
     } catch (error) {
       console.error("Error loading data:", error);

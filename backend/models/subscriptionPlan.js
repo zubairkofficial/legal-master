@@ -2,7 +2,7 @@
 import { DataTypes, Model } from 'sequelize';
 
 export default function initSubscriptionPlanModel(sequelize) {
-    class SubscriptionPlan extends Model {}
+    class SubscriptionPlan extends Model { }
 
     SubscriptionPlan.init(
         {
@@ -28,7 +28,7 @@ export default function initSubscriptionPlanModel(sequelize) {
                 comment: 'Price in cents',
             },
             interval: {
-                type: DataTypes.ENUM('day', 'week', 'month', 'quarter', 'year'),
+                type: DataTypes.ENUM('3days', 'day', 'week', 'month', 'quarter', 'year'),
                 allowNull: false,
                 defaultValue: 'month',
             },

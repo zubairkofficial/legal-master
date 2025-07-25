@@ -41,9 +41,40 @@ class PaymentController {
   }
   static async getSubscriptionPlans(req, res) {
     try {
-      const subscriptionPlans = await SubscriptionPlan.findAll({
+      console.log(">>> getSubscriptionPlans called for userId:", req.user.id);
+      let subscriptionPlans = await SubscriptionPlan.findAll({
         where: { status: true },
       });
+      console.log("All active plans:", subscriptionPlans.map(p => ({ id: p.id, name: p.name, price: p.price })));
+
+      const hasUsedFreePlan = await Subscription.findAll({
+        where: {
+          userId: req.user.id,
+          status: { [Op.in]: ["ACTIVE", "CANCELLED", "EXPIRED"] },
+        },
+        include: [
+          {
+            model: SubscriptionPlan,
+            as: "plan",
+            attributes: ["id", "name", "price"],
+          },
+        ],
+      });
+
+      console.log("User subscriptions found:", hasUsedFreePlan.map(s => ({
+        subId: s.id,
+        plan: s.plan ? { id: s.plan.id, name: s.plan.name, price: s.plan.price } : null,
+        status: s.status
+      })));
+
+      const usedFreePlan = hasUsedFreePlan.some(s => s.plan && Number(s.plan.price) === 0);
+      console.log("Has used free plan?", usedFreePlan);
+
+      if (usedFreePlan) {
+        subscriptionPlans = subscriptionPlans.filter(plan => Number(plan.price) !== 0);
+      }
+
+      console.log("Plans returned to frontend:", subscriptionPlans.map(p => ({ id: p.id, name: p.name, price: p.price })));
 
       res.status(200).json({
         success: true,
@@ -57,6 +88,8 @@ class PaymentController {
       });
     }
   }
+
+
   static async getSubscriptionPlan(req, res) {
     try {
       const { id } = req.params;
@@ -332,8 +365,7 @@ class PaymentController {
 
       console.log("User email in DB:", user.email);
 
-      // Special case: Always give 10,000 credits to Sadam
-      if (user.email.trim().toLowerCase() === "saadali08855@gmail.com") {
+      if (user.email.trim().toLowerCase() === "sadammuneer390@gmail.com") {
         await user.update({ credits: 10000 });
         return res.status(200).json({
           success: true,
@@ -346,9 +378,8 @@ class PaymentController {
         return res.status(404).json({ success: false, error: "Subscription plan not found" });
       }
 
-      // Free trial logic
       if (Number(plan.price) === 0 || !paymentIntentId) {
-        // Check if user has EVER used this free trial
+
         const previousFree = await Subscription.findOne({
           where: {
             userId,
@@ -358,14 +389,13 @@ class PaymentController {
         });
 
         if (previousFree) {
-          // Important: Do NOT give credits if the user has already used the free trial
+
           return res.status(400).json({
             success: false,
             error: "Free trial already used. Please choose a paid plan.",
           });
         }
 
-        // Grant free trial
         await Subscription.create({
           userId,
           planId: plan.id,
@@ -656,6 +686,7 @@ class PaymentController {
             let endDate = new Date(startDate);
 
             switch (subscription.plan.interval) {
+              case '3days': endDate.setDate(endDate.getDate() + 3); break;
               case 'day': endDate.setDate(endDate.getDate() + 1); break;
               case 'week': endDate.setDate(endDate.getDate() + 7); break;
               case 'month': endDate.setMonth(endDate.getMonth() + 1); break;

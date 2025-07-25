@@ -305,6 +305,7 @@ const SubscriptionPlans: React.FC = () => {
                   <SelectValue placeholder="Select interval" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="3days">3 Days</SelectItem>
                   <SelectItem value="day">Daily</SelectItem>
                   <SelectItem value="week">Weekly</SelectItem>
                   <SelectItem value="month">Monthly</SelectItem>
