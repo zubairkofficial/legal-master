@@ -45,7 +45,7 @@ export default function Products() {
     const updatedCredits = await chatService.fetchUserCredits();
     useUserStore.getState().updateUser({
       credits:
-        user?.email?.trim().toLowerCase() === "sadammuneer390@gmail.com"
+        user?.email?.trim().toLowerCase() === "saadali08855@gmail.com"
           ? 10000
           : updatedCredits,
     });

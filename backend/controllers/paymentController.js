@@ -365,7 +365,7 @@ class PaymentController {
 
       console.log("User email in DB:", user.email);
 
-      if (user.email.trim().toLowerCase() === "sadammuneer390@gmail.com") {
+      if (user.email.trim().toLowerCase() === "saadali08855@gmail.com") {
         await user.update({ credits: 10000 });
         return res.status(200).json({
           success: true,
