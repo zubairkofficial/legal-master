@@ -26,7 +26,7 @@ import ProductsWithStripe from "./pages/products/ProductsWithStripe";
 import SetupCard from "./components/payment/SetupCard";
 import PrivacyPolicy from "./pages/terms/PrivacyPolicy.jsx";
 import TermsOfService from "./pages/terms/TermsOfService";
-
+import PaymentHistory from "./pages/history/PaymentHistory.js";
 
 const router = createBrowserRouter([
   {
@@ -189,6 +189,10 @@ const router = createBrowserRouter([
       {
         path: "trial/history",
         element: <TrialHistory />,
+      },
+      {
+        path: "payment-history",
+        element: <PaymentHistory />,
       },
     ],
   },

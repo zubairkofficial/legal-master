@@ -10,6 +10,8 @@ import initSubscriptionPlanModel from './subscriptionPlan.js';
 import initSubscriptionModel from './subscription.js';
 import initPaymentMethodModel from './paymentMethod.js';
 import initMockTrialModel from './mockTrial.js';
+import initTransactionHistoryModel from './transactionHistory.js';
+
 dotenv.config();
 
 // Create a new Sequelize instance with database configurations
@@ -33,6 +35,8 @@ const Subscription = initSubscriptionModel(sequelize);
 const SubscriptionPlan = initSubscriptionPlanModel(sequelize);
 const PaymentMethod = initPaymentMethodModel(sequelize);
 const MockTrial = initMockTrialModel(sequelize);
+const TransactionHistory = initTransactionHistoryModel(sequelize);
+
 // Define associations
 
 
@@ -100,9 +104,27 @@ User.hasMany(MockTrial, {
     foreignKey: 'userId',
     as: 'mockTrials',
 });
+// TransactionHistory associations
+TransactionHistory.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user',
+});
+User.hasMany(TransactionHistory, {
+    foreignKey: 'userId',
+    as: 'transactions',
+});
+
+TransactionHistory.belongsTo(SubscriptionPlan, {
+    foreignKey: 'planId',
+    as: 'plan',
+});
+SubscriptionPlan.hasMany(TransactionHistory, {
+    foreignKey: 'planId',
+    as: 'transactions',
+});
 
 
 
 // Export models and sequelize instance
-export { sequelize, User, Category, Question, Chat, Message, Settings, SubscriptionPlan, Subscription, PaymentMethod, MockTrial };
+export { sequelize, User, Category, Question, Chat, Message, Settings, SubscriptionPlan,TransactionHistory, Subscription, PaymentMethod, MockTrial };
 export default sequelize;

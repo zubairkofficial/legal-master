@@ -1,123 +1,78 @@
 // controllers/authController.js
-import { User } from '../models/index.js';
-import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
+import { User } from "../models/index.js";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 dotenv.config();
-import crypto from 'crypto';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { Op } from 'sequelize';
-import fs from 'fs';
-import Stripe from 'stripe';
+import crypto from "crypto";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { Op } from "sequelize";
+import fs from "fs";
+import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2022-11-15',
+  apiVersion: "2022-11-15",
 });
-
 
 // Centralized Email Configuration
 const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_HOST,
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.MAIL_USERNAME,
-        pass: process.env.MAIL_PASSWORD,
-    },
-    logger: true,
-    debug: true,
+  host: process.env.MAIL_HOST,
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.MAIL_USERNAME,
+    pass: process.env.MAIL_PASSWORD,
+  },
+  logger: true,
+  debug: true,
 });
 
-
 // Base email template for consistent branding
+// Better visualization & design - LEGAL MASTER AI Email Template
 const getEmailTemplate = (content, buttonText, buttonUrl) => {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LEGAL MASTER AI</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            color: #000000;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #ffffff;
-        }
-        .email-container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 30px;
-            text-align: center;
-            border: 1px solid #e0e0e0;
-        }
-        .email-header {
-            background-color: #BB8A28;
-            color: #ffffff;
-            padding: 15px;
-            border-radius: 8px 8px 0 0;
-            margin: -30px -30px 20px;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #BB8A28;
-            color: white !important;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-top: 20px;
-            transition: background-color 0.3s ease;
-        }
-        .button:hover {
-            background-color: #9E7320;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #555555;
-        }
-        a {
-            color: #BB8A28;
-            text-decoration: none;
-        }
-        a:hover {
-            color: #9E7320;
-        }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <div class="email-header">
-            <h1>LEGAL MASTER AI</h1>
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 30px auto; padding: 25px; background-color: #ffffff; border-radius: 10px; border: 1px solid #e5e5e5; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+      
+      <!-- Logo / Brand -->
+      <div style="text-align: center; margin-bottom: 25px;">
+        <div style="display: inline-block; background-color: #BB8A28; color: #fff; font-size: 20px; font-weight: bold; padding: 10px 20px; border-radius: 6px;">
+          LEGAL MASTER AI
         </div>
-        
+      </div>
+
+      <!-- Email Content -->
+      <div style="color: #333333; font-size: 15px; line-height: 1.6; text-align: left;">
         ${content}
-        
-        ${buttonText && buttonUrl ? `<a href="${buttonUrl}" class="button">${buttonText}</a>` : ''}
-        
-        <div class="footer">
-            <p>© ${new Date().getFullYear()} LEGAL MASTER AI. All rights reserved.</p>
-            ${buttonUrl ? `<p>If you're having trouble, copy and paste this link into your browser: <br>${buttonUrl}</p>` : ''}
-        </div>
+      </div>
+
+      <!-- Call-to-action Button -->
+      ${
+        buttonText && buttonUrl
+          ? `<div style="text-align: center; margin: 30px 0;">
+              <a href="${buttonUrl}" style="background-color: #BB8A28; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                ${buttonText}
+              </a>
+            </div>`
+          : ""
+      }
+
+      <!-- Footer -->
+      <p style="text-align: center; color: #777777; font-size: 12px; margin-top: 20px;">
+        &copy; ${new Date().getFullYear()} LEGAL MASTER AI. All rights reserved.
+      </p>
     </div>
-</body>
-</html>`;
+  `;
 };
 
 // HTML page template for responses
 const getHtmlPageTemplate = (content, isSuccess = true) => {
-    const iconType = isSuccess ? '✅' : '❌';
-    const iconColor = isSuccess ? '#4caf50' : '#d32f2f';
-    const titleColor = isSuccess ? '#4caf50' : '#d32f2f';
+  const iconType = isSuccess ? "✅" : "❌";
+  const iconColor = isSuccess ? "#4caf50" : "#d32f2f";
+  const titleColor = isSuccess ? "#4caf50" : "#d32f2f";
 
-    return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
-    <title>${isSuccess ? 'Success' : 'Error'} - LEGAL MASTER AI</title>
+    <title>${isSuccess ? "Success" : "Error"} - LEGAL MASTER AI</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -170,17 +125,15 @@ const getHtmlPageTemplate = (content, isSuccess = true) => {
 </html>`;
 };
 
-
 class AuthController {
+  static async sendConfirmationEmail(user) {
+    const token = String(crypto.randomBytes(32).toString("hex")); // Generate a unique token
+    const verificationUrl = `${process.env.BACKEND_API_URL}/auth/verify-email?token=${token}&email=${user.email}`;
+    // Store the token in the user record for later verification (you might want to add a new field in your User model)
+    user.verificationToken = token; // Make sure to update your User model to store this token
+    await user.save();
 
-    static async sendConfirmationEmail(user) {
-        const token = String(crypto.randomBytes(32).toString('hex')); // Generate a unique token
-        const verificationUrl = `${process.env.BACKEND_API_URL}/auth/verify-email?token=${token}&email=${user.email}`;
-        // Store the token in the user record for later verification (you might want to add a new field in your User model)
-        user.verificationToken = token; // Make sure to update your User model to store this token
-        await user.save();
-
-        const emailContent = `
+    const emailContent = `
         <h2>Welcome to LEGAL MASTER AI!</h2>
         
         <p>Thank you for signing up. To get started and secure your account, please verify your email address by clicking the button below.</p>
@@ -188,619 +141,650 @@ class AuthController {
         <p>If you didn't create an account, you can safely ignore this email.</p>
         `;
 
-        const mailOptions = {
-            from: `"Legal Master AI" <${process.env.MAIL_USERNAME}>`,
-            to: user.email,
-            subject: 'Verify Your Email - LEGAL MASTER AI',
-            html: getEmailTemplate(emailContent, 'Verify Email Address', verificationUrl)
-        };
+    const mailOptions = {
+      from: `"Legal Master AI" <${process.env.MAIL_USERNAME}>`,
+      to: user.email,
+      subject: "Verify Your Email - LEGAL MASTER AI",
+      html: getEmailTemplate(
+        emailContent,
+        "Verify Email Address",
+        verificationUrl
+      ),
+    };
 
-        try {
-            await transporter.sendMail(mailOptions);
-            console.log('Email sent successfully');
-        } catch (error) {
-            console.error('Error sending email:', error);
-            throw new Error(`Error sending email: ${error.message}`);
-        }
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log("Email sent successfully");
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw new Error(`Error sending email: ${error.message}`);
     }
+  }
 
-    static async signup(req, res) {
-        const { name, email, password, username } = req.body;
+  static async signup(req, res) {
+    const { name, email, password, username } = req.body;
 
+    try {
+      // Check email & username
+      const existingUserByEmail = await User.findOne({ where: { email } });
+      if (existingUserByEmail) {
+        return res.status(400).json({ message: "Email is already in use." });
+      }
+
+      const existingUserByUsername = await User.findOne({
+        where: { username },
+      });
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: "Username is already taken." });
+      }
+
+      // Create user
+      const newUser = await User.create({
+        name,
+        email,
+        username,
+        password,
+        role: "user",
+      });
+      res.status(201).json({
+        message:
+          "Signed up successfully. Please check your email for verification.",
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          username: newUser.username,
+          isActive: newUser.isActive,
+          role: newUser.role,
+        },
+      });
+      (async () => {
         try {
-            // Check email & username
-            const existingUserByEmail = await User.findOne({ where: { email } });
-            if (existingUserByEmail) {
-                return res.status(400).json({ message: "Email is already in use." });
-            }
-
-            const existingUserByUsername = await User.findOne({ where: { username } });
-            if (existingUserByUsername) {
-                return res.status(400).json({ message: "Username is already taken." });
-            }
-
-            // Create user
-            const newUser = await User.create({
-                name,
-                email,
-                username,
-                password,
-                role: "user",
-            });
-            res.status(201).json({
-                message: "Signed up successfully. Please check your email for verification.",
-                user: {
-                    id: newUser.id,
-                    name: newUser.name,
-                    email: newUser.email,
-                    username: newUser.username,
-                    isActive: newUser.isActive,
-                    role: newUser.role,
-                },
-            });
-            (async () => {
-                try {
-                    const stripeCustomer = await stripe.customers.create({
-                        name: newUser.name,
-                        email: newUser.email,
-                    });
-                    await newUser.update({ stripeCustomerId: stripeCustomer.id });
-                } catch (stripeError) {
-                    console.error("Stripe customer creation failed:", stripeError.message);
-                }
-
-                try {
-                    await AuthController.sendConfirmationEmail(newUser);
-                    console.log("Email sent successfully");
-                } catch (emailError) {
-                    console.error("Failed to send confirmation email:", emailError.message);
-                }
-            })();
-        } catch (error) {
-            console.error("Error creating user:", error);
-            if (!res.headersSent) {
-                res.status(500).json({ message: `Internal server error: ${error.message}` });
-            }
+          const stripeCustomer = await stripe.customers.create({
+            name: newUser.name,
+            email: newUser.email,
+          });
+          await newUser.update({ stripeCustomerId: stripeCustomer.id });
+        } catch (stripeError) {
+          console.error(
+            "Stripe customer creation failed:",
+            stripeError.message
+          );
         }
-    }
-
-    static async verifyEmail(req, res) {
-        const { token, email } = req.query;
 
         try {
-            // Find the user with the given email and token
-            const user = await User.findOne({ where: { email, verificationToken: token } });
+          await AuthController.sendConfirmationEmail(newUser);
+          console.log("Email sent successfully");
+        } catch (emailError) {
+          console.error(
+            "Failed to send confirmation email:",
+            emailError.message
+          );
+        }
+      })();
+    } catch (error) {
+      console.error("Error creating user:", error);
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ message: `Internal server error: ${error.message}` });
+      }
+    }
+  }
 
-            if (!user) {
-                const errorContent = `
+  static async verifyEmail(req, res) {
+    const { token, email } = req.query;
+
+    try {
+      // Find the user with the given email and token
+      const user = await User.findOne({
+        where: { email, verificationToken: token },
+      });
+
+      if (!user) {
+        const errorContent = `
                     <h1>Verification Failed</h1>
                     <p>Invalid or expired verification link. Please request a new verification email.</p>
                 `;
-                return res.status(400).send(getHtmlPageTemplate(errorContent, false));
-            }
+        return res.status(400).send(getHtmlPageTemplate(errorContent, false));
+      }
 
-            await user.update(
-                {
-                    isActive: true,
-                    verificationToken: null
-                }
-            )
+      await user.update({
+        isActive: true,
+        verificationToken: null,
+      });
 
-            const successContent = `
+      const successContent = `
                 <h1>Email Verified Successfully!</h1>
                 <p>Your account has been successfully verified. You can now log in to your account.</p>
                 <p><span class="link">You can now login to your account</span></p>
             `;
-            res.send(getHtmlPageTemplate(successContent, true));
-        } catch (error) {
-            console.error('Error verifying email:', error);
+      res.send(getHtmlPageTemplate(successContent, true));
+    } catch (error) {
+      console.error("Error verifying email:", error);
 
-            const errorContent = `
+      const errorContent = `
                 <h1>Server Error</h1>
                 <p>An error occurred while verifying your email. Please try again later.</p>
             `;
-            res.status(500).send(getHtmlPageTemplate(errorContent, false));
-        }
+      res.status(500).send(getHtmlPageTemplate(errorContent, false));
     }
+  }
 
-    static async signin(req, res) {
-        const { username, password } = req.body;
+  static async signin(req, res) {
+    const { username, password } = req.body;
 
+    try {
+      const user = await User.findOne({
+        where: {
+          [Op.or]: [{ username }, { email: username }],
+        },
+      });
+
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      if (!user.isActive) {
+        return res
+          .status(403)
+          .json({
+            message: "Account is not activated. Please verify your email.",
+          });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Generate tokens
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          username: user.username,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "24h" }
+      );
+
+      const refreshToken = jwt.sign(
+        { id: user.id },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await user.update({ refreshToken });
+
+      // --- Stripe Migration Check ---
+      if (!user.stripeCustomerId) {
         try {
-            const user = await User.findOne({
-                where: {
-                    [Op.or]: [
-                        { username },
-                        { email: username }
-                    ]
-                }
-            });
+          const stripeCustomer = await stripe.customers.create({
+            name: user.name,
+            email: user.email,
+          });
 
-            if (!user) {
-                return res.status(401).json({ message: 'Invalid credentials' });
-            }
+          await user.update({
+            stripeCustomerId: stripeCustomer.id,
+            isOld: true,
+          });
 
-            if (!user.isActive) {
-                return res.status(403).json({ message: 'Account is not activated. Please verify your email.' });
-            }
+          const setupIntent = await stripe.setupIntents.create({
+            customer: stripeCustomer.id,
+          });
 
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                return res.status(401).json({ message: 'Invalid credentials' });
-            }
-
-            // Generate tokens
-            const token = jwt.sign(
-                { id: user.id, email: user.email, role: user.role, username: user.username },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
-
-            const refreshToken = jwt.sign(
-                { id: user.id },
-                process.env.REFRESH_TOKEN_SECRET,
-                { expiresIn: '7d' }
-            );
-
-            await user.update({ refreshToken });
-
-            // --- Stripe Migration Check ---
-            if (!user.stripeCustomerId) {
-                try {
-                    const stripeCustomer = await stripe.customers.create({
-                        name: user.name,
-                        email: user.email,
-                    });
-
-                    await user.update({ stripeCustomerId: stripeCustomer.id, isOld: true });
-
-                    const setupIntent = await stripe.setupIntents.create({
-                        customer: stripeCustomer.id,
-                    });
-
-                    return res.status(200).json({
-                        message: 'Login successful',
-                        user: {
-                            id: user.id,
-                            name: user.name,
-                            email: user.email,
-                            username: user.username,
-                            isActive: user.isActive,
-                            role: user.role,
-                            credits: user.credits,
-                            isTwoFactorEnabled: user.isTwoFactorEnabled,
-                            profileImage: user.profileImage,
-                            stripeCustomerId: user.stripeCustomerId,
-                            isOld: true
-                        },
-                        token,
-                        refreshToken,
-                        requiresStripeSetup: true,
-                        clientSecret: setupIntent.client_secret
-                    });
-                } catch (stripeError) {
-                    console.error('Error creating Stripe customer for old user:', stripeError.message);
-                    return res.status(500).json({ message: 'Stripe customer migration failed.' });
-                }
-            }
-
-            // Normal login response for users with stripeCustomerId
-            return res.status(200).json({
-                message: 'Login successful',
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    username: user.username,
-                    isActive: user.isActive,
-                    role: user.role,
-                    credits: user.credits,
-                    isTwoFactorEnabled: user.isTwoFactorEnabled,
-                    profileImage: user.profileImage,
-                    stripeCustomerId: user.stripeCustomerId,
-                    isOld: Boolean(user.isOld),
-                },
-                token,
-                refreshToken,
-                requiresStripeSetup: false
-            });
-        } catch (error) {
-            console.error('Error signing in:', error);
-            return res.status(500).json({ message: `Internal server error: ${error.message}` });
+          return res.status(200).json({
+            message: "Login successful",
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              username: user.username,
+              isActive: user.isActive,
+              role: user.role,
+              credits: user.credits,
+              isTwoFactorEnabled: user.isTwoFactorEnabled,
+              profileImage: user.profileImage,
+              stripeCustomerId: user.stripeCustomerId,
+              isOld: true,
+            },
+            token,
+            refreshToken,
+            requiresStripeSetup: true,
+            clientSecret: setupIntent.client_secret,
+          });
+        } catch (stripeError) {
+          console.error(
+            "Error creating Stripe customer for old user:",
+            stripeError.message
+          );
+          return res
+            .status(500)
+            .json({ message: "Stripe customer migration failed." });
         }
+      }
+
+      // Normal login response for users with stripeCustomerId
+      return res.status(200).json({
+        message: "Login successful",
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          isActive: user.isActive,
+          role: user.role,
+          credits: user.credits,
+          isTwoFactorEnabled: user.isTwoFactorEnabled,
+          profileImage: user.profileImage,
+          stripeCustomerId: user.stripeCustomerId,
+          isOld: Boolean(user.isOld),
+        },
+        token,
+        refreshToken,
+        requiresStripeSetup: false,
+      });
+    } catch (error) {
+      console.error("Error signing in:", error);
+      return res
+        .status(500)
+        .json({ message: `Internal server error: ${error.message}` });
     }
+  }
 
-    static async forgotPassword(req, res) {
-        const { email } = req.body;
+  static async forgotPassword(req, res) {
+    const { email } = req.body;
 
-        try {
-            const user = await User.findOne({ where: { email } });
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+    try {
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            // Generate reset token
-            const resetToken = crypto.randomBytes(32).toString('hex');
-            const resetUrl = `${process.env.BACKEND_API_URL}/auth/reset-password?token=${resetToken}&email=${user.email}`;
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetUrl = `${process.env.BACKEND_API_URL}/auth/reset-password?token=${resetToken}&email=${user.email}`;
 
-            // Set token and expiry (1 hour)
-            user.resetPasswordToken = resetToken;
-            user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-            await user.save();
+      // Set token and expiry (1 hour)
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+      await user.save();
 
-            const emailContent = `
+      const emailContent = `
                 <h2>Password Reset Request</h2>
                 <p>You requested a password reset. Click the button below to reset your password:</p>
                 <p>If you didn't request this, please ignore this email.</p>
                 <p>This link will expire in 1 hour.</p>
             `;
 
-            const mailOptions = {
-                from: process.env.MAIL_FROM_ADDRESS,
-                to: user.email,
-                subject: 'Password Reset - LEGAL MASTER AI',
-                html: getEmailTemplate(emailContent, 'Reset Password', resetUrl)
-            };
+      const mailOptions = {
+        from: process.env.MAIL_FROM_ADDRESS,
+        to: user.email,
+        subject: "Password Reset - LEGAL MASTER AI",
+        html: getEmailTemplate(emailContent, "Reset Password", resetUrl),
+      };
 
-            await transporter.sendMail(mailOptions);
-            res.status(200).json({ message: 'Password reset email sent' });
-        } catch (error) {
-            console.error('Error in forgotPassword:', error);
-            res.status(500).json({ message: 'Error processing request' });
-        }
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({ message: "Password reset email sent" });
+    } catch (error) {
+      console.error("Error in forgotPassword:", error);
+      res.status(500).json({ message: "Error processing request" });
     }
+  }
 
-    static async resetPassword(req, res) {
-        const { token, email, newPassword } = req.body;
+  static async resetPassword(req, res) {
+    const { token, email, newPassword } = req.body;
 
-        try {
-            const user = await User.findOne({
-                where: {
-                    email,
-                    resetPasswordToken: token,
-                    resetPasswordExpires: { [Op.gt]: Date.now() }
-                }
-            });
+    try {
+      const user = await User.findOne({
+        where: {
+          email,
+          resetPasswordToken: token,
+          resetPasswordExpires: { [Op.gt]: Date.now() },
+        },
+      });
 
-            if (!user) {
-                return res.status(400).json({ message: 'Invalid or expired token' });
-            }
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
 
-            // Update password and clear reset fields
-            user.password = newPassword;
-            user.resetPasswordToken = null;
-            user.resetPasswordExpires = null;
-            await user.save();
+      // Update password and clear reset fields
+      user.password = newPassword;
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
 
-            res.status(200).json({ message: 'Password reset successful' });
-        } catch (error) {
-            console.error('Error in resetPassword:', error);
-            res.status(500).json({ message: 'Error resetting password' });
-        }
+      res.status(200).json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Error in resetPassword:", error);
+      res.status(500).json({ message: "Error resetting password" });
     }
+  }
 
-    static async resendVerification(req, res) {
-        const { email } = req.body;
+  static async resendVerification(req, res) {
+    const { email } = req.body;
 
-        try {
-            const user = await User.findOne({ where: { email } });
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+    try {
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            if (user.isActive) {
-                return res.status(400).json({ message: 'Account is already verified' });
-            }
+      if (user.isActive) {
+        return res.status(400).json({ message: "Account is already verified" });
+      }
 
-            await AuthController.sendConfirmationEmail(user);
-            res.status(200).json({ message: 'Verification email resent' });
-        } catch (error) {
-            console.error('Error in resendVerification:', error);
-            res.status(500).json({ message: 'Error resending verification email' });
-        }
+      await AuthController.sendConfirmationEmail(user);
+      res.status(200).json({ message: "Verification email resent" });
+    } catch (error) {
+      console.error("Error in resendVerification:", error);
+      res.status(500).json({ message: "Error resending verification email" });
     }
+  }
 
-    static async changePassword(req, res) {
-        const { currentPassword, newPassword } = req.body;
-        const userId = req.user.id; // Assuming you have user in req from JWT middleware
+  static async changePassword(req, res) {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id; // Assuming you have user in req from JWT middleware
 
-        try {
-            const user = await User.findByPk(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            // Verify current password
-            const isMatch = await bcrypt.compare(currentPassword, user.password);
-            if (!isMatch) {
-                return res.status(401).json({ message: 'Current password is incorrect' });
-            }
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res
+          .status(401)
+          .json({ message: "Current password is incorrect" });
+      }
 
-            // Update password
-            user.password = newPassword;
-            await user.save();
+      // Update password
+      user.password = newPassword;
+      await user.save();
 
-            res.status(200).json({ message: 'Password changed successfully' });
-        } catch (error) {
-            console.error('Error in changePassword:', error);
-            res.status(500).json({ message: 'Error changing password' });
-        }
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error in changePassword:", error);
+      res.status(500).json({ message: "Error changing password" });
     }
+  }
 
+  static async enable2FA(req, res) {
+    const userId = req.user.id;
 
-    static async enable2FA(req, res) {
-        const userId = req.user.id;
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-        try {
-            const user = await User.findByPk(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+      await user.update({ isTwoFactorEnabled: true });
+      // Generate QR code URL
 
-            await user.update({ isTwoFactorEnabled: true });
-            // Generate QR code URL
-
-            res.status(200).json({
-                message: '2FA setup initiated',
-
-            });
-        } catch (error) {
-            console.error('Error in enable2FA:', error);
-            res.status(500).json({ message: 'Error enabling 2FA' });
-        }
+      res.status(200).json({
+        message: "2FA setup initiated",
+      });
+    } catch (error) {
+      console.error("Error in enable2FA:", error);
+      res.status(500).json({ message: "Error enabling 2FA" });
     }
+  }
 
-    static async send2FACode(req, res) {
-        const userId = req.user.id;
+  static async send2FACode(req, res) {
+    const userId = req.user.id;
 
-        try {
-            const user = await User.findByPk(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            // Generate 6-digit OTP
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
-            // Save OTP to user record
-            await user.update({
-                otp: await bcrypt.hash(otp, 10),
-                otpExpiry
-            });
+      // Save OTP to user record
+      await user.update({
+        otp: await bcrypt.hash(otp, 10),
+        otpExpiry,
+      });
 
-            const emailContent = `
+      const emailContent = `
                 <h2>Your Two-Factor Authentication Code</h2>
                 <p>Your verification code is: <strong>${otp}</strong></p>
                 <p>This code will expire in 5 minutes.</p>
                 <p>If you didn't request this code, please ignore this email.</p>
             `;
 
-            const mailOptions = {
-                from: process.env.MAIL_FROM_ADDRESS,
-                to: user.email,
-                subject: '2FA Code - LEGAL MASTER AI',
-                html: getEmailTemplate(emailContent)
-            };
+      const mailOptions = {
+        from: process.env.MAIL_FROM_ADDRESS,
+        to: user.email,
+        subject: "2FA Code - LEGAL MASTER AI",
+        html: getEmailTemplate(emailContent),
+      };
 
-            await transporter.sendMail(mailOptions);
-            res.status(200).json({
-                message: 'OTP sent successfully',
-                expiresIn: 300 // 5 minutes in seconds
-            });
-        } catch (error) {
-            console.error('Error sending 2FA code:', error);
-            res.status(500).json({ message: 'Error sending 2FA code' });
-        }
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({
+        message: "OTP sent successfully",
+        expiresIn: 300, // 5 minutes in seconds
+      });
+    } catch (error) {
+      console.error("Error sending 2FA code:", error);
+      res.status(500).json({ message: "Error sending 2FA code" });
     }
+  }
 
-    static async verify2FALogin(req, res) {
-        const { email, otp } = req.body;
+  static async verify2FALogin(req, res) {
+    const { email, otp } = req.body;
 
-        try {
-            const user = await User.findOne({
-                where: {
-                    email,
-                    otpExpiry: {
-                        [Op.gt]: new Date()
-                    }
-                }
-            });
+    try {
+      const user = await User.findOne({
+        where: {
+          email,
+          otpExpiry: {
+            [Op.gt]: new Date(),
+          },
+        },
+      });
 
-            if (!user) {
-                return res.status(400).json({ message: 'Invalid or expired OTP' });
-            }
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired OTP" });
+      }
 
-            // Verify OTP
-            const isValidOTP = await bcrypt.compare(otp, user.otp);
-            if (!isValidOTP) {
-                return res.status(401).json({ message: 'Invalid OTP' });
-            }
+      // Verify OTP
+      const isValidOTP = await bcrypt.compare(otp, user.otp);
+      if (!isValidOTP) {
+        return res.status(401).json({ message: "Invalid OTP" });
+      }
 
-            // Clear OTP after successful verification
-            await user.update({
-                otp: null,
-                otpExpiry: null
-            });
+      // Clear OTP after successful verification
+      await user.update({
+        otp: null,
+        otpExpiry: null,
+      });
 
-            // Generate new tokens
-            const token = jwt.sign(
-                { id: user.id, email: user.email, role: user.role },
-                process.env.JWT_SECRET,
-                { expiresIn: '15m' }
-            );
+      // Generate new tokens
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+      );
 
-            const refreshToken = jwt.sign(
-                { id: user.id },
-                process.env.REFRESH_TOKEN_SECRET,
-                { expiresIn: '7d' }
-            );
+      const refreshToken = jwt.sign(
+        { id: user.id },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: "7d" }
+      );
 
-            await user.update({ refreshToken });
+      await user.update({ refreshToken });
 
-            res.status(200).json({
-                message: '2FA verification successful',
-                token,
-                refreshToken,
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    username: user.username,
-                    isActive: user.isActive,
-                    role: user.role
-                }
-            });
-        } catch (error) {
-            console.error('Error in verify2FALogin:', error);
-            res.status(500).json({ message: 'Error verifying 2FA code' });
-        }
+      res.status(200).json({
+        message: "2FA verification successful",
+        token,
+        refreshToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          isActive: user.isActive,
+          role: user.role,
+        },
+      });
+    } catch (error) {
+      console.error("Error in verify2FALogin:", error);
+      res.status(500).json({ message: "Error verifying 2FA code" });
     }
+  }
 
-    static async resend2FACode(req, res) {
-        const { email } = req.body;
+  static async resend2FACode(req, res) {
+    const { email } = req.body;
 
-        try {
-            const user = await User.findOne({ where: { email } });
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+    try {
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            // Generate new OTP
-            const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
+      // Generate new OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiry
 
-            // Update user with new OTP
-            await user.update({
-                otp: await bcrypt.hash(otp, 10),
-                otpExpiry
-            });
+      // Update user with new OTP
+      await user.update({
+        otp: await bcrypt.hash(otp, 10),
+        otpExpiry,
+      });
 
-            const emailContent = `
+      const emailContent = `
                 <h2>Your New Two-Factor Authentication Code</h2>
                 <p>Your new verification code is: <strong>${otp}</strong></p>
                 <p>This code will expire in 5 minutes.</p>
                 <p>If you didn't request this code, please ignore this email.</p>
             `;
 
-            const mailOptions = {
-                from: process.env.MAIL_FROM_ADDRESS,
-                to: user.email,
-                subject: 'New 2FA Code - LEGAL MASTER AI',
-                html: getEmailTemplate(emailContent)
-            };
+      const mailOptions = {
+        from: process.env.MAIL_FROM_ADDRESS,
+        to: user.email,
+        subject: "New 2FA Code - LEGAL MASTER AI",
+        html: getEmailTemplate(emailContent),
+      };
 
-            await transporter.sendMail(mailOptions);
-            res.status(200).json({
-                message: 'New OTP sent successfully',
-                expiresIn: 300 // 5 minutes in seconds
-            });
-        } catch (error) {
-            console.error('Error resending 2FA code:', error);
-            res.status(500).json({ message: 'Error resending 2FA code' });
-        }
+      await transporter.sendMail(mailOptions);
+      res.status(200).json({
+        message: "New OTP sent successfully",
+        expiresIn: 300, // 5 minutes in seconds
+      });
+    } catch (error) {
+      console.error("Error resending 2FA code:", error);
+      res.status(500).json({ message: "Error resending 2FA code" });
+    }
+  }
+
+  static async disable2FA(req, res) {
+    const userId = req.user.id;
+
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Disable 2FA
+      user.twoFactorSecret = null;
+      user.isTwoFactorEnabled = false;
+      await user.save();
+
+      res.status(200).json({ message: "2FA disabled successfully" });
+    } catch (error) {
+      console.error("Error in disable2FA:", error);
+      res.status(500).json({ message: "Error disabling 2FA" });
+    }
+  }
+
+  static async refreshToken(req, res) {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Refresh token is required" });
     }
 
-    static async disable2FA(req, res) {
-        const userId = req.user.id;
+    try {
+      // Verify the refresh token
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
 
-        try {
-            const user = await User.findByPk(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+      // Find user
+      const user = await User.findByPk(decoded.id);
 
-            // Disable 2FA
-            user.twoFactorSecret = null;
-            user.isTwoFactorEnabled = false;
-            await user.save();
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            res.status(200).json({ message: '2FA disabled successfully' });
-        } catch (error) {
-            console.error('Error in disable2FA:', error);
-            res.status(500).json({ message: 'Error disabling 2FA' });
-        }
+      // Generate new access token
+      const newToken = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+      );
+
+      res.json({
+        token: newToken,
+      });
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      res.status(401).json({ message: "Invalid or expired refresh token" });
     }
+  }
 
-    static async refreshToken(req, res) {
-        const { refreshToken } = req.body;
+  static async logout(req, res) {
+    try {
+      const { refreshToken } = req.body;
 
-        if (!refreshToken) {
-            return res.status(400).json({ message: 'Refresh token is required' });
-        }
+      // Find user with refresh token and clear it
+      await User.update({ refreshToken: null }, { where: { refreshToken } });
 
-        try {
-            // Verify the refresh token
-            const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-            // Find user
-            const user = await User.findByPk(decoded.id);
-
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            // Generate new access token
-            const newToken = jwt.sign(
-                {
-                    id: user.id,
-                    email: user.email,
-                    username: user.username,
-                    role: user.role
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: '15m' }
-            );
-
-            res.json({
-                token: newToken
-            });
-        } catch (error) {
-            console.error('Error refreshing token:', error);
-            res.status(401).json({ message: 'Invalid or expired refresh token' });
-        }
+      res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+      console.error("Error logging out:", error);
+      res.status(500).json({ message: "Error logging out" });
     }
+  }
 
-    static async logout(req, res) {
-        try {
-            const { refreshToken } = req.body;
+  static async resetPasswordPage(req, res) {
+    const { token, email } = req.query;
 
-            // Find user with refresh token and clear it
-            await User.update(
-                { refreshToken: null },
-                { where: { refreshToken } }
-            );
+    try {
+      // Check if token and email are valid
+      const user = await User.findOne({
+        where: {
+          email,
+          resetPasswordToken: token,
+          resetPasswordExpires: { [Op.gt]: Date.now() },
+        },
+      });
 
-            res.status(200).json({ message: 'Logged out successfully' });
-        } catch (error) {
-            console.error('Error logging out:', error);
-            res.status(500).json({ message: 'Error logging out' });
-        }
-    }
-
-    static async resetPasswordPage(req, res) {
-        const { token, email } = req.query;
-
-        try {
-            // Check if token and email are valid
-            const user = await User.findOne({
-                where: {
-                    email,
-                    resetPasswordToken: token,
-                    resetPasswordExpires: { [Op.gt]: Date.now() }
-                }
-            });
-
-            if (!user) {
-                const errorContent = `
+      if (!user) {
+        const errorContent = `
                     <h1>Invalid Reset Link</h1>
                     <p>This password reset link is invalid or has expired. Please request a new password reset.</p>
                 `;
-                return res.send(getHtmlPageTemplate(errorContent, false));
-            }
+        return res.send(getHtmlPageTemplate(errorContent, false));
+      }
 
-            // If valid, show reset password form
-            res.send(`
+      // If valid, show reset password form
+      res.send(`
                 <html>
                 <head>
                     <title>Reset Password - LEGAL MASTER AI</title>
@@ -983,117 +967,121 @@ class AuthController {
                 </body>
                 </html>
             `);
-        } catch (error) {
-            console.error('Error in resetPasswordPage:', error);
+    } catch (error) {
+      console.error("Error in resetPasswordPage:", error);
 
-            const errorContent = `
+      const errorContent = `
                 <h1>Server Error</h1>
                 <p>An error occurred while processing your request. Please try again later.</p>
             `;
-            res.status(500).send(getHtmlPageTemplate(errorContent, false));
-        }
+      res.status(500).send(getHtmlPageTemplate(errorContent, false));
     }
+  }
 
-    static async updateProfile(req, res) {
-        const userId = req.user.id;
-        const { name, email, username, phone, profileImage } = req.body;
+  static async updateProfile(req, res) {
+    const userId = req.user.id;
+    const { name, email, username, phone, profileImage } = req.body;
 
-        try {
-            const user = await User.findByPk(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            // Check if email is being changed and if it's already in use
-            if (email && email !== user.email) {
-                const existingUserWithEmail = await User.findOne({ where: { email } });
-                if (existingUserWithEmail) {
-                    return res.status(400).json({ message: 'Email is already in use' });
-                }
-            }
-
-            // Check if username is being changed and if it's already in use
-            if (username && username !== user.username) {
-                const existingUserWithUsername = await User.findOne({ where: { username } });
-                if (existingUserWithUsername) {
-                    return res.status(400).json({ message: 'Username is already taken' });
-                }
-            }
-
-            // Prepare update data
-            const updateData = {};
-            if (name) updateData.name = name;
-            if (email) updateData.email = email;
-            if (username) updateData.username = username;
-            if (phone) updateData.phone = phone;
-
-            // Handle profile image if present
-            if (profileImage) {
-                // Extract the base64 data (remove data:image/xyz;base64, prefix)
-                const base64Data = profileImage.split(';base64,').pop();
-
-                // Generate unique filename
-                const filename = `${Date.now()}-${userId}.png`;
-                const filePath = `uploads/profiles/${filename}`;
-
-                // Ensure directory exists
-                if (!fs.existsSync('uploads/profiles')) {
-                    fs.mkdirSync('uploads/profiles', { recursive: true });
-                }
-
-                // Save the file
-                fs.writeFileSync(filePath, base64Data, { encoding: 'base64' });
-
-                // Create the full URL for the profile image
-                const imageUrl = `${process.env.BACKEND_BASE_URL}/${filePath}`;
-                updateData.profileImage = imageUrl;
-            }
-
-            // Update user
-            await user.update(updateData);
-
-            // Return updated user data
-            res.status(200).json({
-                message: 'Profile updated successfully',
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    username: user.username,
-                    phone: user.phone,
-                    profileImage: user.profileImage,
-                    isActive: user.isActive,
-                    role: user.role,
-                    isTwoFactorEnabled: user.isTwoFactorEnabled
-                }
-            });
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            res.status(500).json({ message: `Error updating profile: ${error.message}` });
+      // Check if email is being changed and if it's already in use
+      if (email && email !== user.email) {
+        const existingUserWithEmail = await User.findOne({ where: { email } });
+        if (existingUserWithEmail) {
+          return res.status(400).json({ message: "Email is already in use" });
         }
-    }
+      }
 
-    static async verifyPassword(req, res) {
-        const userId = req.user.id;
-        const { password } = req.body;
-
-        try {
-            const user = await User.findByPk(userId);
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            const isMatch = await bcrypt.compare(password, user.password);
-
-            res.status(200).json({
-                isValid: isMatch,
-                message: isMatch ? 'Password is valid' : 'Password is invalid'
-            });
-        } catch (error) {
-            console.error('Error verifying password:', error);
-            res.status(500).json({ message: 'Error verifying password' });
+      // Check if username is being changed and if it's already in use
+      if (username && username !== user.username) {
+        const existingUserWithUsername = await User.findOne({
+          where: { username },
+        });
+        if (existingUserWithUsername) {
+          return res.status(400).json({ message: "Username is already taken" });
         }
+      }
+
+      // Prepare update data
+      const updateData = {};
+      if (name) updateData.name = name;
+      if (email) updateData.email = email;
+      if (username) updateData.username = username;
+      if (phone) updateData.phone = phone;
+
+      // Handle profile image if present
+      if (profileImage) {
+        // Extract the base64 data (remove data:image/xyz;base64, prefix)
+        const base64Data = profileImage.split(";base64,").pop();
+
+        // Generate unique filename
+        const filename = `${Date.now()}-${userId}.png`;
+        const filePath = `uploads/profiles/${filename}`;
+
+        // Ensure directory exists
+        if (!fs.existsSync("uploads/profiles")) {
+          fs.mkdirSync("uploads/profiles", { recursive: true });
+        }
+
+        // Save the file
+        fs.writeFileSync(filePath, base64Data, { encoding: "base64" });
+
+        // Create the full URL for the profile image
+        const imageUrl = `${process.env.BACKEND_BASE_URL}/${filePath}`;
+        updateData.profileImage = imageUrl;
+      }
+
+      // Update user
+      await user.update(updateData);
+
+      // Return updated user data
+      res.status(200).json({
+        message: "Profile updated successfully",
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          phone: user.phone,
+          profileImage: user.profileImage,
+          isActive: user.isActive,
+          role: user.role,
+          isTwoFactorEnabled: user.isTwoFactorEnabled,
+        },
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res
+        .status(500)
+        .json({ message: `Error updating profile: ${error.message}` });
     }
+  }
+
+  static async verifyPassword(req, res) {
+    const userId = req.user.id;
+    const { password } = req.body;
+
+    try {
+      const user = await User.findByPk(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      res.status(200).json({
+        isValid: isMatch,
+        message: isMatch ? "Password is valid" : "Password is invalid",
+      });
+    } catch (error) {
+      console.error("Error verifying password:", error);
+      res.status(500).json({ message: "Error verifying password" });
+    }
+  }
 }
 
 export default AuthController;

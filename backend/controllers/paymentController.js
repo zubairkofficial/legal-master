@@ -3,6 +3,7 @@ import {
   PaymentMethod,
   User,
   Subscription,
+  TransactionHistory,
 } from "../models/index.js";
 import Stripe from "stripe";
 import "dotenv/config";
@@ -352,72 +353,53 @@ class PaymentController {
       });
     }
   }
-  static async confirmPayment(req, res) {
-    try {
-      const { paymentIntentId, creditAmount, planId } = req.body;
-      const userId = req.user.id;
+static async confirmPayment(req, res) {
+  try {
+    const { paymentIntentId, creditAmount, planId } = req.body;
+    const userId = req.user.id;
 
-      // Fetch the user
-      const user = await User.findByPk(userId);
-      if (!user) {
-        return res.status(404).json({ success: false, error: "User not found" });
-      }
+    // Fetch the user
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, error: "User not found" });
+    }
 
-      console.log("User email in DB:", user.email);
+    console.log("User email in DB:", user.email);
 
-      if (user.email.trim().toLowerCase() === "saadali08855@gmail.com") {
-        await user.update({ credits: 10000 });
-        return res.status(200).json({
-          success: true,
-          message: "Special credits granted: 10,000 credits",
-        });
-      }
+    // Special credits for a specific user
+    if (user.email.trim().toLowerCase() === "saadali08855@gmail.com") {
+      await user.update({ credits: 10000 });
+      return res.status(200).json({
+        success: true,
+        message: "Special credits granted: 10,000 credits",
+      });
+    }
 
-      const plan = await SubscriptionPlan.findByPk(planId);
-      if (!plan) {
-        return res.status(404).json({ success: false, error: "Subscription plan not found" });
-      }
+    // Fetch the subscription plan
+    const plan = await SubscriptionPlan.findByPk(planId);
+    if (!plan) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Subscription plan not found" });
+    }
 
-      if (Number(plan.price) === 0 || !paymentIntentId) {
-
-        const previousFree = await Subscription.findOne({
-          where: {
-            userId,
-            planId: plan.id,
-            status: { [Op.in]: ["ACTIVE", "CANCELLED", "EXPIRED"] }
-          },
-        });
-
-        if (previousFree) {
-
-          return res.status(400).json({
-            success: false,
-            error: "Free trial already used. Please choose a paid plan.",
-          });
-        }
-
-        await Subscription.create({
+    // Free plan flow
+    if (Number(plan.price) === 0 || !paymentIntentId) {
+      const previousFree = await Subscription.findOne({
+        where: {
           userId,
           planId: plan.id,
-          status: "ACTIVE",
-          startDate: new Date(),
-          nextBillingDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          status: { [Op.in]: ["ACTIVE", "CANCELLED", "EXPIRED"] },
+        },
+      });
+
+      if (previousFree) {
+        return res.status(400).json({
+          success: false,
+          error: "Free trial already used. Please choose a paid plan.",
         });
-
-        user.credits = Number(user.credits || 0) + Number(creditAmount);
-        await user.save();
-
-
-        return res.status(200).json({
-          success: true,
-          message: "Free plan activated successfully for 3 days.",
-        });
-      }
-
-      // Paid plan flow
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-      if (!paymentIntent || paymentIntent.status !== "succeeded") {
-        return res.status(400).json({ success: false, error: "Payment not successful" });
       }
 
       await Subscription.create({
@@ -425,22 +407,82 @@ class PaymentController {
         planId: plan.id,
         status: "ACTIVE",
         startDate: new Date(),
+        nextBillingDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       });
 
-      await user.update({ credits: Number(creditAmount) });
+      user.credits = Number(user.credits || 0) + Number(creditAmount);
+      await user.save();
 
       return res.status(200).json({
         success: true,
-        message: "Subscription activated successfully.",
-      });
-    } catch (error) {
-      console.error("Error confirming payment:", error);
-      return res.status(500).json({
-        success: false,
-        error: error.message || "Failed to confirm payment. Please try again later.",
+        message: "Free plan activated successfully for 3 days.",
       });
     }
+
+    // Paid plan flow
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (!paymentIntent || paymentIntent.status !== "succeeded") {
+      return res
+        .status(400)
+        .json({ success: false, error: "Payment not successful" });
+    }
+
+    // Retrieve the latest charge for card details
+    let cardBrand = "Unavailable";
+    let cardLast4 = "Unavailable";
+    let receiptUrl = null;
+
+    const chargeId = paymentIntent.latest_charge;
+    if (chargeId) {
+      const charge = await stripe.charges.retrieve(chargeId, {
+        expand: ["payment_method_details"],
+      });
+      cardBrand = charge?.payment_method_details?.card?.brand || "Unavailable";
+      cardLast4 = charge?.payment_method_details?.card?.last4 || "Unavailable";
+      receiptUrl = charge?.receipt_url || null;
+    }
+
+    // Create subscription record
+    await Subscription.create({
+      userId,
+      planId: plan.id,
+      status: "ACTIVE",
+      startDate: new Date(),
+    });
+
+    // Update user's credits
+    await user.update({ credits: Number(creditAmount) });
+
+    // Save transaction history
+    await TransactionHistory.create({
+      userId,
+      planId: plan.id,
+      stripePaymentIntentId: paymentIntent.id,
+      amount: paymentIntent.amount / 100,
+      currency: paymentIntent.currency,
+      status: paymentIntent.status,
+      description: `Subscription to ${plan.name}`,
+      paymentMethod: paymentIntent.payment_method,
+      cardBrand,
+      cardLast4,
+      receiptUrl,
+      transactionDate: new Date(),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Subscription activated successfully.",
+    });
+  } catch (error) {
+    console.error("Error confirming payment:", error);
+    return res.status(500).json({
+      success: false,
+      error:
+        error.message || "Failed to confirm payment. Please try again later.",
+    });
   }
+}
+
 
 
 

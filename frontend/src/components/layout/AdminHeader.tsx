@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Scale, Menu, LogOut, Settings, DollarSign } from "lucide-react";
+import { Scale, Menu, LogOut, Settings, DollarSign, Wallet } from "lucide-react";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
@@ -7,6 +7,8 @@ import { Sidebar } from "./Sidebar";
 import useUserStore from "@/store/useUserStore";
 import { CreditsPopup } from "../credits/CreditsPopup";
 import creditsImg from "./credits.png";
+import { CreditCard } from "lucide-react";
+
 import { useState, useEffect } from "react";
 import {
   DropdownMenu,
@@ -159,6 +161,15 @@ export function AdminHeader({ variant = "admin" }: AdminHeaderProps) {
                   </Link>
                 </DropdownMenuItem>
               )}
+              {variant === "user" && (
+                <DropdownMenuItem asChild>
+                  <Link to="/user/payment-history" className="cursor-pointer">
+                    <Wallet className="mr-2 h-4 w-4" />
+                    <span>Payment History</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

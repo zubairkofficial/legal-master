@@ -12,6 +12,9 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import creditRoutes from "./routes/creditRoutes.js";
 import trialRoutes from "./routes/trialRoutes.js"; // Assuming this is for user credits
 import adminRoutes from "./routes/adminRoutes.js";
+import transactionHistoryRoutes from "./routes/transactionHistory.routes.js";
+
+
 import PaymentController from "./controllers/paymentController.js";
 import cron from "cron";
 
@@ -19,7 +22,13 @@ const app = express();
 
 // Enable CORS for cross-origin requests
 app.use(express.json()); // Parse JSON request bodies
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", 
+    credentials: true, 
+  })
+);
+
 
 const dailyCreditsJob = new cron.CronJob("0 0 * * *", async () => {
   console.log("Running daily credits cron job...");
@@ -52,7 +61,7 @@ v1Router.use("/credits", creditRoutes);
 v1Router.use("/trials", trialRoutes);
 v1Router.use("/admin", adminRoutes);
 
-
+app.use("/transactions", transactionHistoryRoutes);
 app.use("/api/v1", v1Router);
 
 app.get("/api/v1/", (req, res) => {
