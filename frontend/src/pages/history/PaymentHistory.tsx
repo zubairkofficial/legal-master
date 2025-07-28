@@ -86,7 +86,7 @@ function PaymentHistory() {
               <th className="py-3 px-4 border-b">Amount</th>
               <th className="py-3 px-4 border-b">Card</th>
               <th className="py-3 px-4 border-b">Status</th>
-              <th className="py-3 px-4 border-b">Receipt</th>
+              
             </tr>
           </thead>
           <tbody>
@@ -105,20 +105,7 @@ function PaymentHistory() {
                     : "Unavailable"}
                 </td>
                 <td className="py-2 px-4">{tx.status}</td>
-                <td className="py-2 px-4">
-                  {tx.receiptUrl ? (
-                    <a
-                      href={tx.receiptUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 underline"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    "N/A"
-                  )}
-                </td>
+               
               </tr>
             ))}
           </tbody>
