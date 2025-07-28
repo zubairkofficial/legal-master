@@ -5,7 +5,7 @@ class Helpers {
   static localhost: string = "http://localhost:8080";
   static server: string = "https://api.legalmasterai.com/backend";
   static payment: string = `${Helpers.server}`;
-  static basePath: string = Helpers.localhost;
+  static basePath: string = Helpers.server;
   static apiUrl: string = `${Helpers.basePath}/api/v1`;
 
   static authUser: Record<string, any> = JSON.parse(
