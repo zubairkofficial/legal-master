@@ -20,11 +20,11 @@ import cron from "cron";
 
 const app = express();
 
-// Enable CORS for cross-origin requests
-app.use(express.json()); // Parse JSON request bodies
+
+app.use(express.json()); 
 app.use(
   cors({
-    origin: "http://localhost:5173", 
+    origin: "*", 
     credentials: true, 
   })
 );
