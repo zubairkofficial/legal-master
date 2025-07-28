@@ -14,7 +14,6 @@ import trialRoutes from "./routes/trialRoutes.js"; // Assuming this is for user 
 import adminRoutes from "./routes/adminRoutes.js";
 import transactionHistoryRoutes from "./routes/transactionHistory.routes.js";
 
-
 import PaymentController from "./controllers/paymentController.js";
 import cron from "cron";
 
@@ -24,7 +23,7 @@ const app = express();
 app.use(express.json()); 
 app.use(
   cors({
-    origin: "*", 
+    origin: process.env.FRONTEND_BASE_URL, 
     credentials: true, 
   })
 );

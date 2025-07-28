@@ -4,6 +4,7 @@ import Toast from "../components/common/toast";
 class Helpers {
   static localhost: string = "http://localhost:8080";
   static server: string = "https://api.legalmasterai.com/backend";
+  static payment: string = "https://api.legalmasterai.com";
   static basePath: string = Helpers.server;
   static apiUrl: string = `${Helpers.basePath}/api/v1`;
 
