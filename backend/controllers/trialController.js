@@ -9,10 +9,10 @@ dotenv.config();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
+    destination: function(req, file, cb) {
         cb(null, 'uploads/');
     },
-    filename: function (req, file, cb) {
+    filename: function(req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname));
     }
 });
@@ -25,7 +25,7 @@ async function extractPdfContent(filePath) {
         if (!filePath.toLowerCase().endsWith('.pdf')) {
             return `[Not a PDF file: ${path.basename(filePath)}]`;
         }
-        
+
         const loader = new PDFLoader(filePath);
         const docs = await loader.load();
         return docs.map(doc => doc.pageContent).join('\n\n');
@@ -49,34 +49,34 @@ class TrialController {
             const { caseDescription, role, country, state } = req.body;
             let files = [];
             let fileContents = [];
-            
+
             // Get user ID from authenticated user
             const userId = req.user?.id;
-            
+
             if (!userId) {
                 return res.status(401).json({
                     success: false,
                     message: 'User not authenticated'
                 });
             }
-            
+
             // Check if user has sufficient credits
             const user = await User.findByPk(userId);
-            
+
             if (!user) {
                 return res.status(404).json({
                     success: false,
                     message: 'User not found'
                 });
             }
-            
+
             if (user.credits <= 0) {
                 return res.status(403).json({
                     success: false,
                     message: 'Insufficient credits'
                 });
             }
-            
+
             // Get file information if files were uploaded
             if (req.files && req.files.length > 0) {
                 files = req.files.map(file => ({
@@ -84,7 +84,7 @@ class TrialController {
                     filename: file.filename,
                     path: file.path
                 }));
-                
+
                 // Extract content from PDF files
                 for (const file of files) {
                     const content = await extractPdfContent(file.path);
@@ -131,7 +131,7 @@ class TrialController {
                 Country: ${country}
                 State: ${state}
             `;
-            
+
             // Add file contents to the prompt
             if (fileContents.length > 0) {
                 prompt += `\n\nUploaded Documents Content:\n`;
@@ -144,21 +144,23 @@ class TrialController {
 
             // Call OpenAI for analysis
             const response = await chatModel.invoke([{ role: 'user', content: prompt }]);
-            
+
             // Determine tokens used (approximation)
             const tokens = response.usage_metadata?.total_tokens || 100; // Default to 100 if not available
-            
+
             // Deduct tokens from user's credits
-            if ((user.credits*settings.tokensPerCredit) >= tokens) {
-           user.credits -=  ((user.credits*settings.tokensPerCredit)-tokens/user.credits);
-            await user.save();
+            const tpc = Number(settings.tokensPerCredit);
+            if (user && Number.isFinite(tpc) && tpc > 0 && (user.credits * tpc) >= tokens) {
+                const creditsNeeded = Math.ceil(tokens / tpc);
+                user.credits -= creditsNeeded;
+                await user.save();
             } else {
                 return res.status(403).json({
                     success: false,
                     message: 'Insufficient credits'
                 });
             }
-            
+
             // Store the trial data in the database
             const mockTrial = await MockTrial.create({
                 caseData: {
@@ -194,34 +196,34 @@ class TrialController {
     static async analyzeTrialFiles(req, res) {
         try {
             const { trialId } = req.body;
-            
+
             // Get user ID from authenticated user
             const userId = req.user?.id;
-            
+
             if (!userId) {
                 return res.status(401).json({
                     success: false,
                     message: 'User not authenticated'
                 });
             }
-            
+
             // Check if user has sufficient credits
             const user = await User.findByPk(userId);
-            
+
             if (!user) {
                 return res.status(404).json({
                     success: false,
                     message: 'User not found'
                 });
             }
-            
+
             if (user.credits <= 0) {
                 return res.status(403).json({
                     success: false,
                     message: 'Insufficient credits'
                 });
             }
-            
+
             if (!trialId) {
                 return res.status(400).json({
                     success: false,
@@ -231,7 +233,7 @@ class TrialController {
 
             // Fetch the trial from the database
             const trial = await MockTrial.findByPk(trialId);
-            
+
             if (!trial) {
                 return res.status(404).json({
                     success: false,
@@ -242,7 +244,7 @@ class TrialController {
             // Get file information for plaintiff and defendant
             const plaintiffFiles = req.files?.plaintiffFiles || [];
             const defendantFiles = req.files?.defendantFiles || [];
-            
+
             // Extract content from plaintiff PDF files
             const plaintiffFileContents = [];
             for (const file of plaintiffFiles) {
@@ -252,7 +254,7 @@ class TrialController {
                     content
                 });
             }
-            
+
             // Extract content from defendant PDF files
             const defendantFileContents = [];
             for (const file of defendantFiles) {
@@ -262,7 +264,7 @@ class TrialController {
                     content
                 });
             }
-            
+
             // Get OpenAI settings
             const settings = await Settings.findOne({
                 where: {
@@ -294,7 +296,7 @@ class TrialController {
                 Country: ${country}
                 State: ${state}
             `;
-            
+
             // Add plaintiff file contents to the prompt
             if (plaintiffFileContents.length > 0) {
                 prompt += `\n\nPlaintiff Documents Content:\n`;
@@ -304,7 +306,7 @@ class TrialController {
             } else {
                 prompt += `\nNo plaintiff documents uploaded.`;
             }
-            
+
             // Add defendant file contents to the prompt
             if (defendantFileContents.length > 0) {
                 prompt += `\n\nDefendant Documents Content:\n`;
@@ -314,7 +316,7 @@ class TrialController {
             } else {
                 prompt += `\nNo defendant documents uploaded.`;
             }
-            
+
             prompt += `\n\nPlease provide:
                 1. A summary of the case
                 2. Analysis of both parties' arguments
@@ -325,13 +327,15 @@ class TrialController {
 
             // Call OpenAI for analysis
             const response = await chatModel.invoke([{ role: 'user', content: prompt }]);
-            
+
             // Determine tokens used (approximation)
             const tokens = response.usage_metadata?.total_tokens || 200; // Default to 200 if not available
-            
+
             // Deduct tokens from user's credits
-            if (user.credits >= tokens) {
-                user.credits -= tokens;
+             const tpc = Number(settings.tokensPerCredit);
+            if ((user.credits * tpc) >= tokens) {
+              const creditsNeeded = Math.ceil(tokens / tpc);
+              user.credits -= creditsNeeded;
                 await user.save();
             } else {
                 return res.status(403).json({
@@ -339,14 +343,14 @@ class TrialController {
                     message: 'Insufficient credits'
                 });
             }
-            
+
             // Update the trial with the detailed analysis
             const updatedFileUrls = [
                 ...(trial.filesUrl || []),
                 ...(plaintiffFiles.map(file => file.path)),
                 ...(defendantFiles.map(file => file.path))
             ];
-            
+
             await trial.update({
                 caseAnalysis: response.content,
                 summary: response.content.substring(0, 500) + '...', // Store a concise summary in the summary field
@@ -374,7 +378,7 @@ class TrialController {
         try {
             // Get userId from authenticated user
             const userId = req.user?.id;
-            
+
             if (!userId) {
                 return res.status(401).json({
                     success: false,
@@ -385,7 +389,9 @@ class TrialController {
             // Fetch all trials belonging to the user
             const trials = await MockTrial.findAll({
                 where: { userId },
-                order: [['createdAt', 'DESC']]
+                order: [
+                    ['createdAt', 'DESC']
+                ]
             });
 
             return res.status(200).json({
@@ -415,7 +421,9 @@ class TrialController {
 
             // Fetch all trials in the system
             const trials = await MockTrial.findAll({
-                order: [['createdAt', 'DESC']]
+                order: [
+                    ['createdAt', 'DESC']
+                ]
             });
 
             return res.status(200).json({
