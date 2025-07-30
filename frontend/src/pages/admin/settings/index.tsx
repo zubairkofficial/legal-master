@@ -40,6 +40,7 @@ const formSchema = z.object({
   }),
   apiKey: z.string().min(1, "API key is required"),
   systemPrompt: z.string().min(1, "System prompt is required"),
+  tokensPerCredit: z.number().min(1, "Tokens per credit must be at least 1"),
 });
 
 function AdminPage() {
@@ -52,6 +53,7 @@ function AdminPage() {
       model: "",
       apiKey: "",
       systemPrompt: "",
+      tokensPerCredit: 100,
     },
   });
 
@@ -64,6 +66,7 @@ function AdminPage() {
           form.setValue("model", response.data.settings.model);
           form.setValue("apiKey", response.data.settings.apiKey);
           form.setValue("systemPrompt", response.data.settings.systemPrompt);
+          form.setValue("tokensPerCredit", response.data.settings.tokensPerCredit || 100);
           setModels(response.data.models);
         }
       } catch (error) {
@@ -84,7 +87,7 @@ function AdminPage() {
       description: `Model: ${values.model}, API Key: ${values.apiKey.substring(
         0,
         4
-      )}...`,
+      )}..., Tokens per Credit: ${values.tokensPerCredit}`,
     });
   }
 
@@ -179,6 +182,29 @@ function AdminPage() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="tokensPerCredit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tokens per Credit</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="100"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Number of tokens that can be used per credit. This determines how many tokens each credit is worth.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <Button type="submit" className="w-full">
                   <Save className="mr-2 h-4 w-4" />
                   Save Configuration

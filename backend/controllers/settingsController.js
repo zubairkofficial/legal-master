@@ -13,13 +13,14 @@ class SettingsController {
                     service: 'openai'
                 }
             });
-            
+
             if (!settings) {
                 return res.status(200).json({
                     success: true,
                     settings: {
                         model: "gpt-4o-mini",
                         apiKey: "",
+                        tokensPerCredit: 100,
                     },
                     models: []
                 });
@@ -44,7 +45,7 @@ class SettingsController {
                     models: modelList
                 });
             }
-         
+
             return res.status(200).json({
                 success: true,
                 settings,
@@ -61,8 +62,8 @@ class SettingsController {
 
     // Create a new user
     static async createOrUpdateSettings(req, res) {
-        const { model, apiKey, systemPrompt } = req.body;
-        
+        const { model, apiKey, systemPrompt, tokensPerCredit } = req.body;
+
         try {
             // Check if model already exists
             const existingSettings = await Settings.findOne({
@@ -84,9 +85,10 @@ class SettingsController {
             const newSettings = await Settings.create({
                 model,
                 apiKey,
-                systemPrompt
+                systemPrompt,
+                tokensPerCredit: tokensPerCredit || 100
             });
-            
+
             return res.status(201).json({
                 success: true,
                 settings: newSettings
@@ -102,4 +104,4 @@ class SettingsController {
 
 }
 
-export default SettingsController; 
+export default SettingsController;

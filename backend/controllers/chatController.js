@@ -142,14 +142,18 @@ class ChatController {
 
             // Deduct tokens from user's credits
             const user = await User.findByPk(userId);
-            if (user && user.credits >= tokens) {
-                if (tokens > user.credits) {
+            const tpc = Number(settings.tokensPerCredit);
+             if (user && Number.isFinite(tpc) && tpc > 0 && (user.credits * tpc) >= tokens) {
+ 
+                if (tokens > (user.credits * tpc)) {
                     user.credits = 0;
                     await user.save();
                 }
                 else {
-                    user.credits -= tokens;
-                    await user.save();
+                    const creditsNeeded = Math.ceil(tokens / tpc);
+                    user.credits -= creditsNeeded;
+                    //   user.credits -=  (((+user.credits*(+settings.tokensPerCredit))-tokens)/user.credits);
+                      await user.save();
                 }
 
             } else {

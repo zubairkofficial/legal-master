@@ -149,9 +149,9 @@ class TrialController {
             const tokens = response.usage_metadata?.total_tokens || 100; // Default to 100 if not available
             
             // Deduct tokens from user's credits
-            if (user.credits >= tokens) {
-                user.credits -= tokens;
-                await user.save();
+            if ((user.credits*settings.tokensPerCredit) >= tokens) {
+           user.credits -=  ((user.credits*settings.tokensPerCredit)-tokens/user.credits);
+            await user.save();
             } else {
                 return res.status(403).json({
                     success: false,
